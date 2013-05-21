@@ -1090,9 +1090,9 @@ $(document).ready(function() {
 
         function notHighlightDiv(d,click){
             var name;
-            if(click){
+            if (click) {
                 name= d.name;
-            }else{
+            } else{
                 name= getName(d);
             }
             d3.select('div[name="' + name + '"]')

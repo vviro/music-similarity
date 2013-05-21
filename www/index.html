@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+<title>Music similarity browser</title>
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Pontano+Sans' rel='stylesheet' type='text/css'>
+<style type="text/css">
+
+body {
+    background-color: #ebebeb;
+    margin-top: 0px;
+}
+
+#wrapper {
+    margin: 0px auto;
+    width: 997px;
+    background-color: white;
+}
+
+#header {
+    padding-left: 40px;
+    padding-top: 3px;
+    padding-bottom: 15px;
+    font-family: 'Open Sans', sans-serif;
+}
+
+#header h1 {
+    font-size: 28px;
+}
+
+circle.root{
+    fill: grey;
+    fill-opacity: 0.7;
+}
+
+circle {
+    fill: #33648e;
+    fill-opacity: .5;
+    stroke: rgb(31, 119, 180);
+    stroke-width: 1px;
+}
+
+circle.child {
+    fill: #15c136;
+    stroke: #075614;
+    fill-opacity: .8;
+    cursor:pointer;
+
+}
+
+circle:hover {
+    stroke: #000000;
+    stroke-width: 2px;
+}
+
+circle[hover="true"] {
+    stroke: #000000;
+    stroke-width: 2px;
+}
+
+circle[hover="child"] {
+    stroke: #000000;
+    stroke-width: 2px;
+}
+
+text {
+    cursor:pointer;
+    font: 10px sans-serif;
+    fill: white;
+}
+
+#header {
+    float: left;
+}
+
+#infoWrapper {
+    font-family: 'Pontano Sans', sans-serif;
+    height: 550px;
+    width: 340px;
+    clear: both;
+    float: right;
+}
+
+#infos {
+    height: 470px;
+    margin-top: 10px;
+    overflow-y: hidden;
+    clear:both;
+}
+
+#infoHead{
+    font: 20px serif;
+    height: 30px;
+    width: 330px;
+    float: right;
+    margin-right: 10px;
+    margin-bottom: 20px;
+}
+
+#infos div {
+    cursor:pointer;
+    margin-bottom: 5px;
+}
+
+#infos div[depth="1"]{
+    font-size: 16px;
+}
+
+#infos div[child="true"]{
+    color: #363434;
+    font-weight: normal;
+    font-size: 16px;
+    text-indent: 3em;
+}
+
+#infos div[child="true"][depth="3"]{
+    color: #464444;
+    font-weight: normal;
+    font-size: 15px;
+    text-indent: 5em;
+}
+
+#scoreLink{
+    color: grey;
+    font: 12px sans serif;
+    margin-left: 5px;
+}
+
+#svgWrapper {
+    clear: left;
+    padding-top: 1px;
+}
+
+svg#main{
+    float: left;
+    position: absolute;
+    margin-left: 40px;
+    border: 1px solid #DEDEDE;
+}
+
+#search {
+    height: 61px;
+    float: right;
+    padding-top: 30px;
+    padding-right: 40px;
+    font-family: 'Pontano Sans', sans-serif;
+    font-size: 16px;
+    color: grey;
+}
+
+.progress {
+    font-size: 20px;
+    font-style: italic;
+    font-weight: bold;
+    color:  #15c136;
+}
+
+#legendContainer {
+    float: left;
+    margin-top: 580px;
+    margin-left: 75px;
+    width: 420px;
+}
+
+#legend {
+    padding-top: 20px;
+    float:right;
+}
+
+.legende {
+    font: 15px sans-serif;
+    color: #888;
+}
+
+.explain{
+    font-size: 10px;
+}
+
+#sizeLegend {
+    height: 130px;
+    width: 200px;
+    margin-left: 50px;
+    float:left;
+}
+.sizeLegendSpan {
+    position: absolute;
+    border-top: solid 1px #BBB;
+    width: 50px;
+    margin-left: 60px;
+    margin-top: 679px;
+}
+
+#sizeLegend .sizeLegendSpan span {
+    font: 15px sans-serif;
+    color: #888;
+    position: absolute;
+    display: block;
+    left: 55px;
+    top: -8px;
+    width: 100px;
+}
+
+.sizeLegendCircle {
+    stroke-width: 1;
+    stroke: #565454;
+    stroke-dasharray: 3 3;
+    stroke-linecap: round;
+    fill:none;
+}
+
+.ui-menu {
+    font: 15px sans-serif;
+}
+
+#similarTo {
+    margin-left: 90px;
+    color: #a5a5a5;
+    margin-top: 12px;
+}
+
+#secondScreen {
+    clear: both;
+    font-family: 'Pontano Sans', sans-serif;
+    margin: 40px;
+}
+
+#secondScreen h2 {
+    text-align: center;
+    font-size: 28px;
+}
+
+#interestingFinds {
+    padding-top: 30px;
+}
+
+#plainTextLink {
+    float: right;
+    margin-top: -20px;
+    margin-right: 68px;
+}
+
+#sourceLink {
+    position: absolute;
+    margin-left: -60px;
+    margin-top: -21px;
+    font-size: 14px;
+}
+
+#socialButtons {
+    position: absolute;
+    margin-left: 533px;
+    padding-top: 33px;
+}
+
+</style>
+</head>
+<body>
+
+<!--
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+    fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+-->
+
+<div id = "wrapper">
+
+    <div id="firstScreen">
+
+        <div id="header">
+            <h1>
+                Similar Music
+            </h1>
+        </div>
+
+        <div id="socialButtons">
+
+            <!-- <div class="fb-like" data-href="http://peachnote.com/similarity" data-send="false" data-width="100" data-show-faces="false"></div> -->
+
+            <a href="https://twitter.com/share" class="twitter-share-button" data-text="Check out the music similarity browser" data-via="peachnote" data-count="none">Tweet</a>
+            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+
+        </div>
+
+        <div id="search">
+            <input type="text" id="scoreId" style="width:300px;" spellcheck="false">
+            <div class="progress"></div>
+        </div>
+
+        <div id="infoWrapper">
+            <div id="infoHead"></div>
+            <span id="similarTo">is similar to works by</span>
+            <div id="infos"></div>
+        </div>
+
+        <div id="svgWrapper">
+            <a id="plainTextLink" href="http://peachnote.com/similarity.html" target='_blank'>text version</a>
+        </div>
+
+
+        <div id="legendContainer">
+
+            <div id="sizeLegend">
+                <div style="top:10px;" class="sizeLegendSpan"><span>Similarity node</span></div>
+                <div style="top:45px;" class="sizeLegendSpan"><span>higher similarity</span></div>
+                <div style="top:90px;" class="sizeLegendSpan"><span>lower similarity</span></div>
+                <svg id="sizeLegendCircle">
+                    <circle r="50" class="sizeLegendCircle" cx="50" cy="60"></circle>
+                    <circle r="30" class="sizeLegendCircle" cx="50" cy="40"></circle>
+                    <circle r="18" class="sizeLegendCircle" cx="50" cy="90"></circle>
+                </svg>
+            </div>
+
+            <div id="legend">
+                <svg height="20" width="50">
+                    <rect x="25" y="5" height="15" width="25" style="stroke:#000066; fill: #33648e; fill-opacity: .5;"/>   </svg>
+                <span class="legende">Composer</span>
+                <br>
+                <svg height="20" width="50">
+                    <rect x="25" y="5" height="15" width="25" style="stroke:#000066; fill: #33648e; fill-opacity: .8;"/>   </svg>
+                <span class="legende">Composition</span>
+                <br>
+                <svg height="20" width="50">
+                    <rect x="25" y="5" height="15" width="25" style="stroke:#006600; fill: #00cc00"/>   </svg>
+                <span class="legende">Score</span>
+            </div>
+
+            <a href="http://peachnote.com">
+                <img src="powered-by-peachnote-transparent-small.png" style="height:40px; margin-top:30px; margin-left: 400px; position: absolute;">
+            </a>
+
+        </div>
+
+    </div>
+
+    <div id="secondScreen">
+
+        <div id="interestingFinds">
+
+            <h2>Interesting Finds</h2>
+
+            <a href="#IMSLP29616">Violin schools are similar</a>
+
+
+        </div>
+
+        <div id="about">
+
+            <h2>About</h2>
+
+            How is the similarity measured?
+            <p>
+
+                Who made this? Photos go here.
+            <p>
+
+        </div>
+
+    </div>
+</div>
+
+
+<script type="text/javascript">
+
+function Scroll(pos) {
+    $('#infos').scrollTop(pos);
+}
+
+$(document).ready(function() {
+
+
+    var developer = false;
+    var clicked = false;
+
+    var DEFAULT_SCORE = "IMSLP00001";
+    var MAX_LIST_LENGTH_NO_SCROLL = 19;
+    var TRANSITION_DURATION = 2000;
+    var SEARCH_HINT = 'Explore scores...';
+    var PLAIN_TEXT_URL = 'http://peachnote.com/similarity.html';
+    var INFO_HEIGHT = 470;
+    var INFOWRAPPERHEIGHT = 550;
+
+    var w = 550,
+            h = 550,
+            r = 550,
+            x = d3.scale.linear().range([0, r]),
+            y = d3.scale.linear().range([0, r]),
+            node,
+            root,
+            format = d3.format(",d");
+
+    var zoomable=false;
+    var zoomed=false;
+    var zoomedNode;
+
+    var pack = d3.layout.pack()
+            .size([r, r])
+            .value(function(d) { return Math.pow(Math.log(d.score),3); })
+
+
+    var vis = d3.select("#svgWrapper").append("svg")
+            .attr("id", "main")
+            .attr("width", w)
+            .attr("height", h)
+            .attr("transform", "translate(" + (w - r) / 2 + "," + (h - r) / 2 + ")");
+
+    var circles = vis.append("g").attr("class", "circles");
+    var texte = vis.append("g").attr("class", "texte");
+
+    var scoreTitle = "";
+    var scoreAuthor;
+
+    window.onhashchange = function() {
+        update(location.hash.replace('#',''));
+    }
+
+    var loadScore = function(scoreId) {
+        location.hash = "#" + scoreId;
+    }
+
+    //Autocomplete Search
+    $(function() {
+
+        $("#scoreId").autocomplete({
+            source: function( request, response ) {
+                $.ajax({
+                    url: 'http://www.peachnote.com/rest/api/v1/scoreSearchMeta?app_id=abe33d61&app_key=b985ac7a9881a67de8a7b069d295b3fe&offset=0',
+                    dataType: "jsonp",
+                    data: {
+                        limit:10,
+                        q: '(title:"'+request.term+'"~0) (composer:'+request.term+')^2'
+                    },
+                    success: function(data) {
+                        response( $.map( data.items, function( item ) {
+                            return {
+                                label: item.authors[0]+", "+item.title,
+                                value: item.authors[0]+", "+item.title,
+                                scoreId: item.scoreId
+                            }
+                        }));
+                    }
+                });
+            },
+            minLength: 2,
+            select: function( event, ui ) {
+                d3.select('div.progress').text("Getting Data...");
+                update(ui.item.scoreId);
+            }
+        });
+
+    });
+
+
+
+    var onRelatedScoreData = function (data) {
+
+        if ($("#scoreId").val() != SEARCH_HINT) $("#scoreId").val("");
+
+        if (data.relatedScores.length == 0) {
+            alert("no similarity data available yet");
+            return;
+        }
+
+        var scoreDescriptionURL ="http://www.peachnote.com/rest/api/v1/scoreSearchMeta?" +
+                "app_id=abe33d61&app_key=b985ac7a9881a67de8a7b069d295b3fe" +
+                "&offset=0&limit=1&q=%20id:" + data.scoreId;
+
+        $.ajax({
+            type: "GET",
+            url: scoreDescriptionURL,
+            dataType: "jsonp",
+            success: getSimilarityScore,
+            error: errorFunction
+        });
+
+        var scores = data.relatedScores;
+        var rootName=data.scoreId;
+
+        var len = scores.length;
+
+        var comps={};
+        var aComps=[];
+        var scoreValues=0;
+
+
+        for (var i = 0; i < len; i++) {
+            var s = scores[i];
+            scoreValues += scoreValues + s.count;
+            var url = document.location.pathname
+                    + "?scoreId=" + s.scoreId;
+
+            var componistName;
+            if (developer) {
+                componistName = typeof s.composer === 'undefined' ? 'undefined' : s.composer;
+            } else {
+                if (typeof s.composer === 'undefined') {
+                    continue;
+                }
+                componistName= s.composer;
+            }
+            if (typeof comps[componistName] === 'undefined') {
+                comps[componistName] = {
+                    name: componistName,
+                    dChildren: {},
+                    children: [],
+                    score: 0
+                };
+                aComps.push(comps[componistName]);
+            }
+            var componist = comps[componistName];
+            componist.score += s.count;
+
+
+            var workTitleName = typeof s.workTitle === 'undefined' ? 'undefined' : s.workTitle;
+            if (typeof componist.dChildren[workTitleName] === 'undefined') {
+                componist.dChildren[workTitleName] = {
+                    name: workTitleName,
+                    composer: s.composer,
+                    score: 0,
+                    children: []
+                };
+                componist.children.push(componist.dChildren[workTitleName]);
+            }
+            var workTitle = componist.dChildren[workTitleName];
+            workTitle.score += s.count;
+            workTitle.children.push({
+                name: typeof s.scoreTitle === 'undefined' ? 'undefined' : s.scoreTitle+"id:"+s.scoreId,
+                composer: typeof s.scoreTitle === 'undefined' ? 'undefined' :s.composer,
+                composition: typeof s.scoreTitle === 'undefined' ? 'undefined' :s.workTitle,
+                year: typeof s.scoreTitle === 'undefined' ? 'undefined' :s.year,
+                score: s.count,
+                scoreId: s.scoreId
+            });
+        }
+
+        var dataset = {"root":rootName,"name":scoreTitle,"score":scoreValues,"children":aComps};
+        if (dataset.children.length == 0) {
+            dataset = {"root":rootName,"name":scoreTitle,"score":100,"children":aComps};
+            updateData(dataset, true);
+        }else{
+            updateData(dataset);
+        }
+    };
+
+    var getSimilarityScore = function(data) {
+
+
+        var scoreId = data.items[0].scoreId;
+
+        scoreTitle = typeof data.items[0] !== 'undefined' ? data.items[0].title : scoreId;
+        scoreAuthor = typeof data.items[0] !== 'undefined' ? data.items[0].authors : '';
+
+        var header = d3.select("#infoHead");
+        header.selectAll("span.headline").remove();
+        header.selectAll("span.headline").data(scoreAuthor)
+                .enter().append("span").attr("class","headline")
+                .text(function(d){return d});
+
+        header.select("div.headline").remove();
+        header.append("div").attr("class", "headline")
+                .text(function() {
+                    if (scoreTitle.length > 35) {
+                        return scoreTitle.substring(0, 35) + "...";
+                    } else {
+                        return scoreTitle;
+                    }
+                });
+
+
+        var pureId = scoreId.substring(5);
+
+        console.log('got similarity for ' + pureId);
+
+        $("#sourceLink").detach();
+        $("<a>").attr("id", "sourceLink")
+                .attr("href", "http://imslp.org/wiki/Special:ReverseLookup/" + pureId)
+                .attr("target", "_blank")
+                .text("[source]")
+                .appendTo($('#infoHead'));
+    }
+
+    var errorFunction = function(){
+        d3.select('.progress').text('Error. Please try again.');
+    }
+
+    var update = function(id) {
+
+        $('#plainTextLink').attr('href', PLAIN_TEXT_URL + '?scoreId=' + id);
+
+        if (!$('#scoreId').is(":focus")) {
+            $('#scoreId').val(SEARCH_HINT);
+        } else {
+            $('#scoreId').val();
+        }
+        $('#scoreId').on('focus', function() {
+            if ($('#scoreId').val() == SEARCH_HINT) {
+                $('#scoreId').val("");
+            }
+        });
+        $('#scoreId').on('blur', function() {
+            if ($('#scoreId').val() == '') {
+                $('#scoreId').val(SEARCH_HINT);
+            }
+        });
+
+        $('#infos').scrollTop(0);
+
+
+        var relatedScoresURL = "http://www.peachnote.com/rest/api/v1/score?withRelated=true&callback=?&id=" + id;
+
+
+        $.ajax({
+            type: "GET",
+            url: relatedScoresURL,
+            dataType: "jsonp",
+            success: onRelatedScoreData,
+            error: errorFunction
+        });
+    }
+
+    function updateData(data, nosuccess){
+        zoomed = false;
+        zoomable = false;
+
+        zoomedNode = node = root = data;
+
+        d3.selectAll("circle title").remove();
+
+        var nodes = pack.nodes(root).filter(function(d) { return d.score; });
+        var key = function(d) {
+            if (d.root) return "0";
+            else if (d.children) return d.name;
+            else return d.scoreId;
+        }
+        var circle = circles.selectAll("circle")
+                .data(nodes, key);
+
+        circle.attr("class", function(d) { if (d.root) { return "root"} else {return d.children ? "parent" : "child";} })
+                .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
+                .attr("name", function(d){return d.name;})
+                .attr("hover","false")
+                .append("title")
+                .text(function(d) {
+                    if (d.root) {
+
+                        var name = '';
+                        for (var author in scoreAuthor) {
+                            name = name === 'undefined' ? '' : name;
+                            name += " " + scoreAuthor[author] + "\n";
+                        }
+
+                        return (name + d.name.split('id:')[0]).trim();
+                    }
+                    else {
+                        return(d.children ? "" : (d.composer === 'undefined' ? '' : d.composer + "\n")
+                                + (d.composition === 'undefined' ? '' : d.composition + "\n"))
+                                + d.name.split('id:')[0]
+                                + "\nSimilarities: "+ format(d.score);}
+                });
+
+        circle.enter().append("svg:circle")
+                .attr("class", function(d) { if(d.root){ return "root"} else{ return d.children ? "parent" : "child";} })
+                .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
+                .attr("name", function(d){return d.name;})
+                .attr("hover","false")
+                .on("mouseover",function(d){
+                    if(zoomedNode.depth<=d.depth){
+                        showChildren(getParents(d),false);
+                    }
+                    if(checkInfoLength() && !d.root){
+                        $('#infos').scrollTop(0);
+                        var offset=$('#infos').offset();
+                        var position = $('div[name="'+ getName(d)+'"]').position();
+
+                        if (position.top > INFOWRAPPERHEIGHT || position.top < $('#infos').scrollTop()){
+                            if (d.depth != 1) {
+
+                                var posParent = $('div[name="'+ getName(d.parent)+'"]').position();
+                                var childrenLength=0;
+
+                                if (d.children) {
+                                    childrenLength= d.children.length*30;
+                                }
+                                if (position.top-posParent.top < INFO_HEIGHT - childrenLength){
+                                    if (d.parent.parent) {
+
+                                        var posParentParent = $('div[name="'+ d.parent.parent.name+'"]').position();
+                                        childrenLength = d.parent.parent.children.length*30 + d.parent.children.length*30;
+
+                                        if(position.top-posParentParent.top < INFO_HEIGHT - childrenLength){
+                                            Scroll(posParentParent.top-offset.top);
+                                        } else {
+                                            Scroll(posParent.top-offset.top);
+                                        }
+                                    }else{
+                                        Scroll(posParent.top-offset.top);
+                                    }
+                                }else{
+                                    Scroll(position.top-offset.top);
+                                }
+                            }else{
+                                Scroll(position.top-offset.top);
+                            }
+                        }
+
+                    }
+                    highlightDiv(d);
+                })
+                .on("mouseleave", function(d) {
+                    if(!zoomed || d.depth == 3) {
+                        notHighlightDiv(d);
+                    }
+                })
+                .on("click", function(d) {
+                    if (d.children) {
+                        zoom(node == d ? root : d);
+                    } else if (d.depth == 3) {
+                        if (!clicked) {
+                            d3.select('div.progress').text("Getting Data...");
+                            d3.select('circle[name="'+d.name+'"]').style("fill", "#288425");
+                            clicked=true;
+                            zoomable=false;
+                            loadScore(d.scoreId);
+                            //update(d.scoreId);
+                        }
+                    }
+                })
+                .attr("cx", function(d) { return w/2; })
+                .attr("cy", function(d) { return h/2; })
+                .attr("r", function(d) { return 0; })
+                .append("title")
+                .text(function(d) {
+                    if(d.root){
+
+                        var name="";
+
+                        for(var author in scoreAuthor){
+                            name=name==='undefined'? '':name;
+                            name+=" "+scoreAuthor[author]+"\n";
+                        }
+
+                        return (name+d.name.split('id:')[0]).trim();
+                    }
+                    else{
+                        return (d.children ? "" : (d.composer==='undefined' ? '' : d.composer+"\n")+(d.composition==='undefined' ? '' : d.composition+"\n"))+d.name.split('id:')[0]+"\nSimilarities: "+ format(d.score) ;} });
+
+        circle.transition().duration(TRANSITION_DURATION)
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", function(d) { return d.r; })
+                .each("start", function(d){
+                    zoomable=false;
+                    d3.select('.progress').text('');
+                })
+                .each("end", function(d){
+                    zoomable=true;
+                    clicked=false;
+                });
+
+
+        circle.exit().transition().duration(TRANSITION_DURATION)
+                .attr("r", function(d) { return 0; }).remove();
+
+
+        d3.selectAll("text tspan").remove();
+
+        var text=texte.selectAll("text")
+                .data(pack.nodes(root).filter(function(d){return !d.children;}),key);
+
+        text.attr("class", function(d) { return "child"; })
+                .style("opacity", function(d) { return 0; });
+
+
+        text.enter().append("svg:text")
+                .attr("class", function(d) { return "child"; })
+                .attr("x", function(d) { return w/2; })
+                .attr("y", function(d) { return h/2; })
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .style("opacity", function(d) { return 0; })
+                .on("mouseover",function(d){
+                    highlightDiv(d);
+                })
+                .on("mouseleave", function(d){
+                    notHighlightDiv(d);
+                })
+                .on("click", function(d){
+                    if (!clicked) {
+                        d3.select('div.progress').text("Getting Data...");
+                        d3.select('circle[name="' + d.name + '"]').style("fill", "#288425");
+                        clicked = true;
+                        zoomable = false;
+                        loadScore(d.scoreId);
+                        //update(d.scoreId);
+                    }
+                });
+
+        text.append("tspan").attr("class", "oben").attr("x",function(d) { return d.x; })
+                .attr("y",function(d) { return d.y-15; })
+                .text(function(d) { return d.composer.substring(0, d.r / 4); })
+
+        text.append("tspan").attr("class", "mitte").attr("x",function(d) { return d.x; })
+                .attr("y",function(d) { return d.y+5; })
+                .text(function(d) { return d.composition.substring(0, d.r / 4); });
+
+        text.append("tspan").attr("class", "unten").attr("x",function(d) { return d.x; })
+                .attr("y",function(d) { return d.y+20; })
+                .text(function(d) { return d.name.split('id:')[0].substring(0, d.r / 4); });
+
+
+        text.transition().duration(TRANSITION_DURATION)
+                .attr("x", function(d) { return d.x; })
+                .attr("y", function(d) { return d.y; })
+                .style("opacity", function(d) { return d.r > 25 ? 1 : 0; })
+                .style("font-size", function(d) { return d.r > 25 ? 10 : 2; });
+
+        text.exit().remove();
+        initDiv(data,nosuccess);
+
+
+        function zoom(d, click) {
+            zoomedNode = d;
+
+            if (d == root) {
+                zoomed = false;
+            } else {
+                zoomed = true;
+                if (!click) {
+                    showChildren(getParents(d), false);
+                }
+            }
+            if(zoomable){
+                /*var k = r / d.r/ 4 ;
+                 var f = d.r*2;
+                 if(k <= 1) {*/
+                k = r/d.r/2;
+                f = d.r;
+                //}
+                x.domain([d.x - f, d.x + f]);
+                y.domain([d.y - f, d.y + f]);
+
+                var t = vis.transition()
+                        .duration(d3.event.altKey ? 7500 : 750)
+
+
+                t.selectAll("circle")
+                        .attr("cx", function(d) { return x(d.x); })
+                        .attr("cy", function(d) { return y(d.y); })
+                        .attr("r", function(d) { return k * d.r; });
+
+
+                t.selectAll("text")
+                        .style("opacity", function(d) { return k * d.r > 25 ? 1 : 0; })
+                        .style("font-size", function(d) { return k*d.r > 25 ? 10 : 2; })
+                        .attr("x", function(d) { return x(d.x); })
+                        .attr("y", function(d) { return y(d.y); });
+
+                t.selectAll("tspan.oben")
+                        .attr("x", function(d) { return x(d.x); })
+                        .attr("y", function(d) { return y(d.y)-15; })
+                        .text(function(d) { return d.composer.substring(0, k*d.r / 4); });
+                t.selectAll("tspan.mitte")
+                        .attr("x", function(d) { return x(d.x); })
+                        .attr("y", function(d) { return y(d.y)+5; })
+                        .text(function(d) { return d.composition.substring(0, k*d.r / 4); });
+                t.selectAll("tspan.unten")
+                        .attr("x", function(d) { return x(d.x); })
+                        .attr("y", function(d) { return y(d.y)+20; })
+                        .text(function(d) { return d.name.split('id:')[0].substring(0, k*d.r / 4); });
+
+                node = d;
+                d3.event.stopPropagation();
+            }
+        }
+
+
+        function initDiv(d, nosuccess) {
+
+            var infos = d3.select("div#infos");
+            infos.selectAll("div").remove();
+            if(nosuccess){
+                infos.append("div")
+                        .style("font-size", "16px")
+                        .style("cursor", "default")
+                        .text("No similiar works");
+
+            }
+            else if (d.children) {
+                //infos.selectAll("div").remove();
+
+                d.children.sort(function(a, b) {return b.score - a.score});
+
+                var div = infos.selectAll("div").data(d.children)
+                        .enter()
+                        .append("div")
+                        .attr("name", function(d){return d.name;})
+                        .attr("id", function(d){return 'div'+d.name;})
+                        .attr("depth", function(d){
+                            if(!d.children){ return 3;}
+                            else if(!d.composition ){
+                                if(!d.composer){ return 1;
+                                }else{return 2;}
+                            }
+                            else{ return d.depth;}
+                        })
+
+                        .text(function(d, i) {
+                            //var title = (i + 1) + ". " + d.name.split('id:')[0];
+                            var title = d.name.split('id:')[0];
+                            return shorten(title);
+                        })
+
+                        .on("click", function(d){
+                            if(!showChildren([d],true)){ zoom(d.parent);
+                            }else{
+                                zoom(node == d ? root : d ,true);
+                            }
+                        })
+                        .on("mouseover", function(d){
+                            highlightDiv(d);
+
+                            var toSelectCircle = 'circle[name="'+d.name+'"]';
+                            var circle= d3.select(toSelectCircle)
+                                    .attr("hover", "true");
+                        })
+                        .on("mouseout", function(d){
+                            d3.select('circle[hover="true"]').attr("hover","false");
+                            if(!zoomed || d.depth==3){
+                                notHighlightDiv(d);
+                            }
+                        });
+
+                div.append("img").attr("src", "down.png")
+                        .attr("title","Click to show children")
+                        .style("margin-left","2px")
+                        .style("float","left")
+                        .style("margin-right","5px")
+                        .style("padding-top","5px")
+                ;
+
+
+            }
+            checkInfoLength();
+        }
+
+        function getParents(d){
+            var datum=d;
+            var parents=[];
+            parents.push(d);
+            while(datum.parent){
+                datum= datum.parent;
+                parents.push(datum);
+            }
+            return parents;
+        }
+
+        function showChildren(d,click){
+
+            var node= d3.select('div[name="'+d[0].name+'"]');
+
+            if(click && $('div[name="'+d[0].name+'"] div[child="true"]').length>0){
+                node.selectAll('div[child="true"]').remove();
+                node.select("img").attr("src", "down.png")
+                        .attr("title","Click to show children");
+                return false;
+            }else{
+                if(!click){
+                    d3.selectAll("#infoWrapper img").attr("src", "down.png")
+                            .attr("title","Click to show children");
+                    d3.selectAll('div[child="true"]').remove();
+                    var depthNode=d[0].depth-1;
+                    if(depthNode!=-1){
+                        node= d3.select('div[name="'+d[depthNode].name+'"]');
+                    }
+                    node.select("img").attr("src", "up.png")
+                            .attr("title","Click to hide children");
+                }else{
+                    node.select("img").attr("src", "up.png")
+                            .attr("title","Click to hide children");
+                }
+
+                for (var i = d.length; i>0; i--) {
+
+                    if (d[i-1].children) {
+
+                        d[i-1].children.sort(function(a, b) {return b.score - a.score});
+
+                        highlightDiv(d[i-1]);
+
+                        var div = d3.select('#infos div[name="'+d[i-1].name+'"]').selectAll("div")
+                                .data(d[i-1].children)
+                                .enter().append("div")
+                                .attr("name", function(d) {return d.name;})
+                                .attr("id", function(d) {return 'div' + d.name;})
+                                .attr("child","true")
+                                .attr("depth", function(d) {
+                                    if(!d.children){
+                                        return 3;
+                                    }
+                                    else if (!d.composition) {
+                                        if (!d.composer) {
+                                            return 1;
+                                        } else {
+                                            return 2;
+                                        }
+                                    }
+                                    else {
+                                        return d.depth;
+                                    }
+                                })
+                                .text(function(d, i) {
+                                    //var title = (i + 1) + ". " + d.name.split('id:')[0];
+                                    var title = d.name.split('id:')[0];
+                                    return shorten(title);
+                                })
+                                .on("click", function(d){
+                                    if(!d.children){
+                                        if(!clicked){
+                                            d3.select('circle[name="' + d.name + '"]').style("fill", "#288425");
+                                            clicked = true;
+                                            zoomable = false;
+                                            d3.select('.progress').text('Getting Data...');
+                                            loadScore(d.scoreId);
+                                            //update(d.scoreId);
+                                        }
+                                    }
+                                    if(!showChildren([d],true)){
+                                        zoom(d.parent);
+                                    }else{
+                                        zoom(node == d ? root : d ,true);
+                                    }
+                                })
+                                .on("mouseover", function(d){
+                                    highlightDiv(d,true);
+
+                                    var toSelectCircle = 'circle[name="'+d.name+'"]';
+                                    var circle= d3.select(toSelectCircle)
+                                            .attr("hover", "child");
+
+                                })
+                                .on("mouseout", function(d){
+                                    d3.select('circle[hover="child"]').attr("hover","false");
+                                    if(!zoomed || d.depth==3){
+                                        notHighlightDiv(d,true);
+                                    }
+                                });
+
+                        checkInfoLength();
+
+                    }
+                }
+                return true;
+            }
+        }
+
+        function checkInfoLength(){
+            if($("#infos div").length > MAX_LIST_LENGTH_NO_SCROLL) {
+                d3.selectAll('#infos').style("overflow-y","scroll");
+                return true;
+            } else {
+                d3.selectAll('#infos').style("overflow-y","hidden");
+                return false;
+            }
+        }
+
+        function highlightDiv(d,click){
+            d3.selectAll('div[depth="' + d.depth + '"]')
+                    .attr("hover", "false")
+                    .style("font-weight", "normal");
+            var name;
+            if(click){
+                name= d.name;
+            }else{
+                name= getName(d);
+            }
+            d3.select('div[name="' + name + '"]')
+                    .attr("hover", "true")
+                    .style("font-weight", "bold");
+        }
+
+        function notHighlightDiv(d,click){
+            var name;
+            if(click){
+                name= d.name;
+            }else{
+                name= getName(d);
+            }
+            d3.select('div[name="' + name + '"]')
+                    .attr("hover", "false")
+                    .style("font-weight", "normal");
+        }
+
+        function getName(d) {
+            var name = '';
+            if (!d.children && d.parent.children.length == 1) {
+                name = d.composer;
+                if (d.parent.parent.children.length > 1) {
+                    name = d.parent.name;
+                }
+            } else {
+                name = d.name;
+            }
+            return name;
+        }
+
+        function shorten(string) {
+            if (string.length > 30) {
+                return string.substring(0,30) + " ...";
+            } else {
+                return string;
+            }
+        }
+    }
+
+    // if hash present, load appropriate score, else load the default.
+
+    if (!location.hash) {
+        update(DEFAULT_SCORE);
+    } else {
+        update(location.hash.replace('#',''));
+    }
+
+
+});
+</script>
+
+<script type="text/javascript">
+
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-9937279-8']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+</script>
+
+</body></html>

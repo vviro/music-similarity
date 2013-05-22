@@ -152,6 +152,7 @@ svg#main{
     font-size: 20px;
     font-style: italic;
     font-weight: bold;
+    padding-top: 5px;
     color:  #15c136;
 }
 
@@ -223,6 +224,12 @@ svg#main{
 #secondScreen h2 {
     text-align: center;
     font-size: 28px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+#secondScreen h3 {
+    margin-bottom: 25px;
 }
 
 #interestingFinds {
@@ -248,8 +255,21 @@ svg#main{
     padding-top: 33px;
 }
 
-#twitterButton {
-    margin-top: -2px;
+#followTwitter {
+    text-align: center;
+}
+
+.person {
+    margin-right: 60px;
+    margin-left: 60px;
+    text-align: center;
+}
+
+.importantText {
+    text-align: center;
+    font-weight: bold;
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
 </style>
@@ -330,7 +350,7 @@ svg#main{
             </div>
 
             <a href="http://www.peachnote.com">
-                <img src="img/powered-by-peachnote-transparent-small.png" style="height:40px; margin-top:30px; margin-left: 400px; position: absolute;">
+                <img src="http://www.peachnote.com/img/powered-by-peachnote-transparent-small.png" style="height:40px; margin-top:30px; margin-left: 400px; position: absolute;">
             </a>
 
         </div>
@@ -339,24 +359,100 @@ svg#main{
 
     <div id="secondScreen">
 
+        <!--
         <div id="interestingFinds">
 
             <h2>Interesting Finds</h2>
 
             <a href="#IMSLP29616">Violin schools are similar</a>
 
-
         </div>
+
+        -->
 
         <div id="about">
 
             <h2>About</h2>
 
-            How is the similarity measured?
+            <h3>How do we measure similarity?</h3>
+
+            The similarity between scores is measured based <u>purely on their content</u>, i.e. the music itself.
+            <u>No metadata</u> are used.
+
             <p>
 
-                Who made this? Photos go here.
+                The algorithm relies on a huge inverted index used in our score search engine,
+                <a href="http://www.peachnote.com">Peachnote.com</a>.
+
+                The algorithm is pretty straightforward and works as follows. We scan through the inverted index
+                (the mapping between musical n-grams, in our case chord progressions, and lists of scores they can be found in).
+                We consider only rare patterns (n-grams that occur at most 40 times in our whole data set of about a million score sheets).
+                For every such rare pattern, for every pair of scores from the list of scores containing it,
+                we increment a co-occurrence counter of the score pair by one. Then, for each score we store a list of scores such that
+                the accumulated count for the pair containing both scores exceed 20 (we store counts as well).
+                This way, for every score containing rare musical patterns we obtain a list of other scores that share
+                at least 20 rare patterns with that score.
+
             <p>
+            <div class="importantText">
+                The more rare (and thus characteristic) patterns a pair of scores has in common,
+                the more similar we judge them.
+            </div>
+
+            <p>
+
+                <!--We find it surprising that-->
+
+            <p>
+
+                The inverted index we use contains several hundred million n-grams and is stored in an HBase database.
+                The algorithm is implemented in a single map-reduce job running in our Hadoop environment.
+                We use the chord n-gram type. Rhythmic information is not considered.
+
+            <p>
+
+                The algorithm could be improved by using normalization (as a second map-reduce step).
+                This way we could improve the quality of ranking and avoid the problem of hubs
+                (large scores sharing many rare patterns with lots of other scores).
+                Examples of such hubs currently are some large scores by Bach, orchestral scores of Fidelio and some Wagner operas.
+                We plan to implement the normalization in the near future. Stay tuned! &nbsp;
+            <div id="followTwitter">
+                <a href="https://twitter.com/peachnote" class="twitter-follow-button" data-show-count="false">Follow @peachnote</a>
+                <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+            </div>
+
+            <p>
+
+                The similarity data is available via the <a href="http://www.peachnote.com/api.html">Peachnote API</a>.
+
+            <p>
+
+                For more information about our system and the origin of the underlying data please refer to our
+                <a href="http://ismir2011.ismir.net/papers/PS3-1.pdf">paper</a>
+                "Peachnote: Music Score Search and Analysis Platform".
+
+            <h3>Who made this?</h3>
+            <p>
+
+            <div class="person" style="float:left">
+
+                <img src="http://www.peachnote.com/img/mai-a.jpg">
+
+                <p>
+                    Mai Bui
+                <p>
+
+            </div>
+
+            <div class="person" style="float:right">
+
+                <img src="http://www.peachnote.com/img/vladimir-a.jpg">
+                <p>
+                    Vladimir Viro
+                <p>
+            </div>
+
+            <div style="clear:both"></div>
 
         </div>
 
@@ -371,7 +467,7 @@ function Scroll(pos) {
 }
 
 $(document).ready(function() {
-	
+
 
     var developer = false;
     var clicked = false;
@@ -427,6 +523,7 @@ $(document).ready(function() {
 
     var loadScore = function(scoreId) {
         location.hash = "#" + scoreId;
+        trackLoadScoreClick(scoreId);
     }
 
     //Autocomplete Search
@@ -468,8 +565,9 @@ $(document).ready(function() {
         if ($("#scoreId").val() != SEARCH_HINT) $("#scoreId").val("");
 
         if (data.relatedScores.length == 0) {
-			$('#progress').text('');
+            $('#progress').text('');
             alert("no similarity data available yet");
+            trackLoadScoreNoSimilarity(scoreId);
             return;
         }
 
@@ -547,7 +645,7 @@ $(document).ready(function() {
 
         var dataset = {"root":rootName, "scoreId": data.scoreId, "name":scoreTitle, "score":scoreValues, "children":aComps};
         updateData(dataset);
-        
+
     };
 
     var getSimilarityScore = function(data) {
@@ -558,21 +656,21 @@ $(document).ready(function() {
         scoreAuthor = typeof data.items[0] !== 'undefined' ? data.items[0].authors : '';
 
         var header = d3.select('#infoHead');
-		
+
         header.selectAll("span.headline").remove();
         header.selectAll("span.headline").data(scoreAuthor)
-              .enter().append("span").attr("class","headline")
-              .text(function(d){return d});
+                .enter().append("span").attr("class","headline")
+                .text(function(d){return d});
 
         header.select("div.headline").remove();
         header.append("div").attr("class", "headline")
-              .text(function() {
+                .text(function() {
                     if (scoreTitle.length > 35) {
                         return scoreTitle.substring(0, 35) + "...";
                     } else {
                         return scoreTitle;
                     }
-              });
+                });
 
 
         var pureId = scoreId.substring(5);
@@ -591,6 +689,8 @@ $(document).ready(function() {
     }
 
     var update = function(id) {
+
+        trackLoadScore(scoreId);
 
         $('#plainTextLink').attr('href', PLAIN_TEXT_URL + '?scoreId=' + id);
 
@@ -645,7 +745,7 @@ $(document).ready(function() {
         circle.attr("class", function(d) { if (d.root) { return "root"} else {return d.children ? "parent" : "child";} })
                 .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
                 .attr("name", function(d){return d.name;})
-				.attr("parent", function (d) {if(d.parent ) return d.parent.name;})
+                .attr("parent", function (d) {if(d.parent ) return d.parent.name;})
                 .attr("hover","false")
                 .append("title")
                 .text(function(d) {
@@ -670,14 +770,14 @@ $(document).ready(function() {
                 .attr("class", function(d) { if(d.root){ return "root"} else{ return d.children ? "parent" : "child";} })
                 .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
                 .attr("name", function(d){return d.name;})
-				.attr("parent", function (d) { if(d.parent )return d.parent.name})
+                .attr("parent", function (d) { if(d.parent )return d.parent.name})
                 .attr("hover","false")
                 .on("mouseover",function(d){
                     if(zoomedNode.depth<=d.depth){
                         showChildren(getParents(d),false);
                     }
                     if(checkInfoLength() && !d.root){
-						updateInfoScroll(d);
+                        updateInfoScroll(d);
                     }
                     highlightDiv(d);
                 })
@@ -717,24 +817,24 @@ $(document).ready(function() {
                     }
                     else{
                         return (d.children ? "" : (d.composer==='undefined' ? '' : d.composer+"\n")+(d.composition==='undefined' ? '' : d.composition+"\n"))+d.name.split('id:')[0]+"\nSimilarities: "+ format(d.score) ;} });
-		
-		var rootCircle = $('.root');
-		var target = $('#circles circle').get(0);
-		rootCircle.insertBefore(target);
-		
-		var oldRoot = d3.select('#circles circle:nth-child(2)');
-		var oldRootObject = $($('#circles circle').get(1));
-		var target = $('circle[name="'+oldRoot.attr('parent')+'"]');
-		oldRootObject.insertAfter(target);
-		
-		
+
+        var rootCircle = $('.root');
+        var target = $('#circles circle').get(0);
+        rootCircle.insertBefore(target);
+
+        var oldRoot = d3.select('#circles circle:nth-child(2)');
+        var oldRootObject = $($('#circles circle').get(1));
+        var target = $('circle[name="'+oldRoot.attr('parent')+'"]');
+        oldRootObject.insertAfter(target);
+
+
         circle.transition().duration(TRANSITION_DURATION)
-				.style("fill", function(d){
-					if( d.root) { return "grey";}
-					else if (!d.children) { return "#15c136";}
-					else { return "#33648e";}
-				
-				})
+                .style("fill", function(d){
+                    if( d.root) { return "grey";}
+                    else if (!d.children) { return "#15c136";}
+                    else { return "#33648e";}
+
+                })
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return d.r; })
@@ -807,321 +907,339 @@ $(document).ready(function() {
         initDiv(data);
 
     }
-	function zoom(d, click) {
-            zoomedNode = d;
+    function zoom(d, click) {
+        zoomedNode = d;
 
-            if (d == root) {
-                zoomed = false;
-            } else {
-                zoomed = true;
-                if (!click) {
-                    showChildren(getParents(d), false);
-                }
-            }
-            if(zoomable){
-                k = r/d.r/2;
-                f = d.r;
-                
-                x.domain([d.x - f, d.x + f]);
-                y.domain([d.y - f, d.y + f]);
-
-                var t = vis.transition()
-                        .duration(d3.event.altKey ? 7500 : 750)
-
-
-                t.selectAll("circle")
-                        .attr("cx", function(d) { return x(d.x); })
-                        .attr("cy", function(d) { return y(d.y); })
-                        .attr("r", function(d) { return k * d.r; });
-
-
-                t.selectAll("text")
-                        .style("opacity", function(d) { return k * d.r > 25 ? 1 : 0; })
-                        .style("font-size", function(d) { return k*d.r > 25 ? 10 : 2; })
-                        .attr("x", function(d) { return x(d.x); })
-                        .attr("y", function(d) { return y(d.y); });
-
-                t.selectAll("tspan.oben")
-                        .attr("x", function(d) { return x(d.x); })
-                        .attr("y", function(d) { return y(d.y)-15; })
-                        .text(function(d) { return d.composer.substring(0, k*d.r / 4); });
-                t.selectAll("tspan.mitte")
-                        .attr("x", function(d) { return x(d.x); })
-                        .attr("y", function(d) { return y(d.y)+5; })
-                        .text(function(d) { return d.composition.substring(0, k*d.r / 4); });
-                t.selectAll("tspan.unten")
-                        .attr("x", function(d) { return x(d.x); })
-                        .attr("y", function(d) { return y(d.y)+20; })
-                        .text(function(d) { return d.name.split('id:')[0].substring(0, k*d.r / 4); });
-
-                node = d;
-                d3.event.stopPropagation();
+        if (d == root) {
+            zoomed = false;
+        } else {
+            zoomed = true;
+            if (!click) {
+                showChildren(getParents(d), false);
             }
         }
+        if(zoomable){
+            k = r/d.r/2;
+            f = d.r;
+
+            x.domain([d.x - f, d.x + f]);
+            y.domain([d.y - f, d.y + f]);
+
+            var t = vis.transition()
+                    .duration(d3.event.altKey ? 7500 : 750)
 
 
-        function initDiv(d) {
-
-            var infos = d3.select("div#infos");
-            infos.selectAll("div").remove();
-            if (d.children) {
-
-                d.children.sort(function(a, b) {return b.score - a.score});
-
-                var div = infos.selectAll("div").data(d.children)
-                        .enter()
-                        .append("div")
-                        .attr("name", function(d){return d.name;})
-                        .attr("id", function(d){return 'div'+d.name;})
-                        .attr("depth", function(d){
-                            if(!d.children){ return 3;}
-                            else if(!d.composition ){
-                                if(!d.composer){ return 1;
-                                }else{return 2;}
-                            }
-                            else{ return d.depth;}
-                        })
-
-                        .text(function(d, i) {
-                            var title = d.name.split('id:')[0];
-                            return shorten(title);
-                        })
-
-                        .on("click", function(d){
-                            if(!showChildren([d],true)){ zoom(d.parent);
-                            }else{
-                                zoom(node == d ? root : d ,true);
-                            }
-                        })
-                        .on("mouseover", function(d){
-                            highlightDiv(d);
-
-                            var toSelectCircle = 'circle[name="'+d.name+'"]';
-                            var circle= d3.select(toSelectCircle)
-                                    .attr("hover", "true");
-                        })
-                        .on("mouseout", function(d){
-                            d3.select('circle[hover="true"]').attr("hover","false");
-                            if(!zoomed || d.depth==3){
-                                notHighlightDiv(d);
-                            }
-                        });
-
-                div.append("img").attr("src", "data:image/png;base64," + downImageBase64)
-                        .attr("title","Click to show children")
-                        .style("margin-left","2px")
-                        .style("float","left")
-                        .style("margin-right","5px")
-                        .style("padding-top","5px");
+            t.selectAll("circle")
+                    .attr("cx", function(d) { return x(d.x); })
+                    .attr("cy", function(d) { return y(d.y); })
+                    .attr("r", function(d) { return k * d.r; });
 
 
-            }
-            checkInfoLength();
+            t.selectAll("text")
+                    .style("opacity", function(d) { return k * d.r > 25 ? 1 : 0; })
+                    .style("font-size", function(d) { return k*d.r > 25 ? 10 : 2; })
+                    .attr("x", function(d) { return x(d.x); })
+                    .attr("y", function(d) { return y(d.y); });
+
+            t.selectAll("tspan.oben")
+                    .attr("x", function(d) { return x(d.x); })
+                    .attr("y", function(d) { return y(d.y)-15; })
+                    .text(function(d) { return d.composer.substring(0, k*d.r / 4); });
+            t.selectAll("tspan.mitte")
+                    .attr("x", function(d) { return x(d.x); })
+                    .attr("y", function(d) { return y(d.y)+5; })
+                    .text(function(d) { return d.composition.substring(0, k*d.r / 4); });
+            t.selectAll("tspan.unten")
+                    .attr("x", function(d) { return x(d.x); })
+                    .attr("y", function(d) { return y(d.y)+20; })
+                    .text(function(d) { return d.name.split('id:')[0].substring(0, k*d.r / 4); });
+
+            node = d;
+            d3.event.stopPropagation();
         }
+    }
 
-        function getParents(d){
-            var datum=d;
-            var parents=[];
-            parents.push(d);
-            while (datum.parent) {
-                datum= datum.parent;
-                parents.push(datum);
-            }
-            return parents;
+
+    function initDiv(d) {
+
+        var infos = d3.select("div#infos");
+        infos.selectAll("div").remove();
+        if (d.children) {
+
+            d.children.sort(function(a, b) {return b.score - a.score});
+
+            var div = infos.selectAll("div").data(d.children)
+                    .enter()
+                    .append("div")
+                    .attr("name", function(d){return d.name;})
+                    .attr("id", function(d){return 'div'+d.name;})
+                    .attr("depth", function(d){
+                        if(!d.children){ return 3;}
+                        else if(!d.composition ){
+                            if(!d.composer){ return 1;
+                            }else{return 2;}
+                        }
+                        else{ return d.depth;}
+                    })
+
+                    .text(function(d, i) {
+                        var title = d.name.split('id:')[0];
+                        return shorten(title);
+                    })
+
+                    .on("click", function(d){
+                        if(!showChildren([d],true)){ zoom(d.parent);
+                        }else{
+                            zoom(node == d ? root : d ,true);
+                        }
+                    })
+                    .on("mouseover", function(d){
+                        highlightDiv(d);
+
+                        var toSelectCircle = 'circle[name="'+d.name+'"]';
+                        var circle= d3.select(toSelectCircle)
+                                .attr("hover", "true");
+                    })
+                    .on("mouseout", function(d){
+                        d3.select('circle[hover="true"]').attr("hover","false");
+                        if(!zoomed || d.depth==3){
+                            notHighlightDiv(d);
+                        }
+                    });
+
+            div.append("img").attr("src", "data:image/png;base64," + downImageBase64)
+                    .attr("title","Click to show children")
+                    .style("margin-left","2px")
+                    .style("float","left")
+                    .style("margin-right","5px")
+                    .style("padding-top","5px");
+
+
         }
+        checkInfoLength();
+    }
 
-        function showChildren(d,click){
+    function getParents(d){
+        var datum=d;
+        var parents=[];
+        parents.push(d);
+        while (datum.parent) {
+            datum= datum.parent;
+            parents.push(datum);
+        }
+        return parents;
+    }
 
-            var node = d3.select('div[name="'+d[0].name+'"]');
+    function showChildren(d,click){
 
-            if (click && $('div[name="'+d[0].name+'"] div[child="true"]').length>0) {
-                node.selectAll('div[child="true"]').remove();
-                node.select("img").attr("src", "data:image/png;base64," + downImageBase64)
+        var node = d3.select('div[name="'+d[0].name+'"]');
+
+        if (click && $('div[name="'+d[0].name+'"] div[child="true"]').length>0) {
+            node.selectAll('div[child="true"]').remove();
+            node.select("img").attr("src", "data:image/png;base64," + downImageBase64)
+                    .attr("title","Click to show children");
+            return false;
+        }else{
+            if(!click){
+                d3.selectAll("#infoWrapper img").attr("src", "data:image/png;base64," + downImageBase64)
                         .attr("title","Click to show children");
-                return false;
-            }else{
-                if(!click){
-                    d3.selectAll("#infoWrapper img").attr("src", "data:image/png;base64," + downImageBase64)
-                            .attr("title","Click to show children");
 
 
 
 
 
-                    d3.selectAll('div[child="true"]').remove();
-                    var depthNode=d[0].depth-1;
-                    if(depthNode!=-1){
-                        node= d3.select('div[name="' + d[depthNode].name + '"]');
-                    }
-                    node.select("img").attr("src", "data:image/png;base64," + upImageBase64)
-                            .attr("title", "Click to hide children");
-                } else {
-                    node.select("img").attr("src", "data:image/png;base64," + upImageBase64)
-                            .attr("title", "Click to hide children");
+                d3.selectAll('div[child="true"]').remove();
+                var depthNode=d[0].depth-1;
+                if(depthNode!=-1){
+                    node= d3.select('div[name="' + d[depthNode].name + '"]');
                 }
+                node.select("img").attr("src", "data:image/png;base64," + upImageBase64)
+                        .attr("title", "Click to hide children");
+            } else {
+                node.select("img").attr("src", "data:image/png;base64," + upImageBase64)
+                        .attr("title", "Click to hide children");
+            }
 
-                for (var i = d.length; i>0; i--) {
+            for (var i = d.length; i>0; i--) {
 
-                    if (d[i-1].children) {
+                if (d[i-1].children) {
 
-                        d[i-1].children.sort(function(a, b) {return b.score - a.score});
+                    d[i-1].children.sort(function(a, b) {return b.score - a.score});
 
-                        highlightDiv(d[i-1]);
+                    highlightDiv(d[i-1]);
 
-                        var div = d3.select('#infos div[name="'+d[i-1].name+'"]').selectAll("div")
-                                .data(d[i-1].children)
-                                .enter().append("div")
-                                .attr("name", function(d) {return d.name;})
-                                .attr("id", function(d) {return 'div' + d.name;})
-                                .attr("child","true")
-                                .attr("depth", function(d) {
-                                    if(!d.children){
-                                        return 3;
-                                    }
-                                    else if (!d.composition) {
-                                        if (!d.composer) {
-                                            return 1;
-                                        } else {
-                                            return 2;
-                                        }
-                                    }
-                                    else {
-                                        return d.depth;
-                                    }
-                                })
-                                .text(function(d, i) {
-                                    //var title = (i + 1) + ". " + d.name.split('id:')[0];
-                                    var title = d.name.split('id:')[0];
-                                    return shorten(title);
-                                })
-                                .on("click", function(d){
-                                    if (!d.children) {
-                                        if (!clicked) {
-                                            d3.select('circle[name="' + d.name + '"]').style("fill", "#288425");
-                                            clicked = true;
-                                            zoomable = false;
-                                            $('#progress').text('Getting Data...');
-                                            loadScore(d.scoreId);
-                                        }
-                                    }
-                                    if (!showChildren([d],true)) {
-                                        zoom(d.parent);
+                    var div = d3.select('#infos div[name="'+d[i-1].name+'"]').selectAll("div")
+                            .data(d[i-1].children)
+                            .enter().append("div")
+                            .attr("name", function(d) {return d.name;})
+                            .attr("id", function(d) {return 'div' + d.name;})
+                            .attr("child","true")
+                            .attr("depth", function(d) {
+                                if(!d.children){
+                                    return 3;
+                                }
+                                else if (!d.composition) {
+                                    if (!d.composer) {
+                                        return 1;
                                     } else {
-                                        zoom(node == d ? root : d ,true);
+                                        return 2;
                                     }
-                                })
-                                .on("mouseover", function(d){
-                                    highlightDiv(d,true);
-
-                                    var toSelectCircle = 'circle[name="'+d.name+'"]';
-                                    var circle = d3.select(toSelectCircle).attr("hover", "child");
-
-                                })
-                                .on("mouseout", function(d){
-                                    d3.select('circle[hover="child"]').attr("hover","false");
-                                    if (!zoomed || d.depth==3) {
-                                        notHighlightDiv(d,true);
+                                }
+                                else {
+                                    return d.depth;
+                                }
+                            })
+                            .text(function(d, i) {
+                                //var title = (i + 1) + ". " + d.name.split('id:')[0];
+                                var title = d.name.split('id:')[0];
+                                return shorten(title);
+                            })
+                            .on("click", function(d){
+                                if (!d.children) {
+                                    if (!clicked) {
+                                        d3.select('circle[name="' + d.name + '"]').style("fill", "#288425");
+                                        clicked = true;
+                                        zoomable = false;
+                                        $('#progress').text('Getting Data...');
+                                        loadScore(d.scoreId);
                                     }
-                                });
+                                }
+                                if (!showChildren([d],true)) {
+                                    zoom(d.parent);
+                                } else {
+                                    zoom(node == d ? root : d ,true);
+                                }
+                            })
+                            .on("mouseover", function(d){
+                                highlightDiv(d,true);
 
-                        checkInfoLength();
+                                var toSelectCircle = 'circle[name="'+d.name+'"]';
+                                var circle = d3.select(toSelectCircle).attr("hover", "child");
 
-                    }
+                            })
+                            .on("mouseout", function(d){
+                                d3.select('circle[hover="child"]').attr("hover","false");
+                                if (!zoomed || d.depth==3) {
+                                    notHighlightDiv(d,true);
+                                }
+                            });
+
+                    checkInfoLength();
                 }
-                return true;
             }
+            return true;
         }
+    }
 
-        function checkInfoLength(){
-            if ($("#infos div").length > MAX_LIST_LENGTH_NO_SCROLL) {
-                d3.selectAll('#infos').style("overflow-y","scroll");
-                return true;
-            } else {
-                d3.selectAll('#infos').style("overflow-y","hidden");
-                return false;
+    function checkInfoLength(){
+        if ($("#infos div").length > MAX_LIST_LENGTH_NO_SCROLL) {
+            d3.selectAll('#infos').style("overflow-y","scroll");
+            return true;
+        } else {
+            d3.selectAll('#infos').style("overflow-y","hidden");
+            return false;
+        }
+    }
+
+    function highlightDiv(d,click){
+        d3.selectAll('div[depth="' + d.depth + '"]')
+                .attr("hover", "false")
+                .style("font-weight", "normal");
+        var name;
+        if(click){
+            name = d.name;
+        }else{
+            name = getName(d);
+        }
+        d3.select('div[name="' + name + '"]')
+                .attr("hover", "true")
+                .style("font-weight", "bold");
+    }
+
+    function notHighlightDiv(d,click){
+        var name;
+        if (click) {
+            name = d.name;
+        } else{
+            name = getName(d);
+        }
+        d3.select('div[name="' + name + '"]')
+                .attr("hover", "false")
+                .style("font-weight", "normal");
+    }
+
+    function getName(d) {
+        var name = '';
+        if (!d.children && d.parent.children.length == 1) {
+            name = d.composer;
+            if (d.parent.parent.children.length > 1) {
+                name = d.parent.name;
             }
+        } else {
+            name = d.name;
         }
+        return name;
+    }
 
-        function highlightDiv(d,click){
-            d3.selectAll('div[depth="' + d.depth + '"]')
-              .attr("hover", "false")
-              .style("font-weight", "normal");
-            var name;
-            if(click){
-                name = d.name;
-            }else{
-                name = getName(d);
-            }
-            d3.select('div[name="' + name + '"]')
-              .attr("hover", "true")
-              .style("font-weight", "bold");
+    function shorten(string) {
+        if (string.length > 30) {
+            return string.substring(0,30) + " ...";
+        } else {
+            return string;
         }
+    }
 
-        function notHighlightDiv(d,click){
-            var name;
-            if (click) {
-                name = d.name;
-            } else{
-                name = getName(d);
-            }
-            d3.select('div[name="' + name + '"]')
-                    .attr("hover", "false")
-                    .style("font-weight", "normal");
-        }
+    function updateInfoScroll(d){
+        $('#infos').scrollTop(0);
+        var offset=$('#infos').offset();
+        var position = $('div[name="'+ getName(d)+'"]').position();
+        var scrollTo = position.top - offset.top;
 
-        function getName(d) {
-            var name = '';
-            if (!d.children && d.parent.children.length == 1) {
-                name = d.composer;
-                if (d.parent.parent.children.length > 1) {
-                    name = d.parent.name;
+        if (position.top > INFOWRAPPERHEIGHT || position.top < $('#infos').scrollTop()) {
+            if (d.depth != 1) {
+
+                var posParent = $('div[name="'+ getName(d.parent)+'"]').position();
+                var childrenLength = 0;
+
+                if (d.children) {
+                    childrenLength = d.children.length*30;
                 }
-            } else {
-                name = d.name;
-            }
-            return name;
-        }
+                if (position.top-posParent.top < INFO_HEIGHT - childrenLength){
+                    scrollTo = posParent.top - offset.top;
+                    if (d.parent.parent) {
 
-        function shorten(string) {
-            if (string.length > 30) {
-                return string.substring(0,30) + " ...";
-            } else {
-                return string;
-            }
-        }
-		
-		function updateInfoScroll(d){
-			$('#infos').scrollTop(0);
-            var offset=$('#infos').offset();
-            var position = $('div[name="'+ getName(d)+'"]').position();
-			var scrollTo = position.top - offset.top;
-			
-            if (position.top > INFOWRAPPERHEIGHT || position.top < $('#infos').scrollTop()) {
-                if (d.depth != 1) {
+                        var posParentParent = $('div[name="'+ getName(d.parent.parent)+'"]').position();
+                        childrenLength = d.parent.parent.children.length*30 + d.parent.children.length*30;
 
-					var posParent = $('div[name="'+ getName(d.parent)+'"]').position();
-                    var childrenLength = 0;
-
-                    if (d.children) {
-                        childrenLength = d.children.length*30;
-                    }
-                    if (position.top-posParent.top < INFO_HEIGHT - childrenLength){
-                        scrollTo = posParent.top - offset.top;
-						if (d.parent.parent) {
-
-                            var posParentParent = $('div[name="'+ getName(d.parent.parent)+'"]').position();
-                            childrenLength = d.parent.parent.children.length*30 + d.parent.children.length*30;
-
-                            if (position.top-posParentParent.top < INFO_HEIGHT - childrenLength){
-                                scrollTo = posParentParent.top - offset.top;
-                            }
+                        if (position.top-posParentParent.top < INFO_HEIGHT - childrenLength){
+                            scrollTo = posParentParent.top - offset.top;
                         }
                     }
                 }
-                Scroll(scrollTo);
-                
             }
-		}
+            Scroll(scrollTo);
+
+        }
+    }
+
+    function trackLoadScoreClick (scoreId) {
+        try {
+            window._gaq.push([ '_trackEvent', "Similarity", "Load on click", scoreId ]);
+        } catch (e) {}
+    }
+
+    function trackLoadScore (scoreId) {
+        try {
+            window._gaq.push([ '_trackEvent', "Similarity", "Load on hash", scoreId ]);
+        } catch (e) {}
+    }
+
+    function trackLoadScoreNoSimilarity (scoreId) {
+        try {
+            window._gaq.push([ '_trackEvent', "Similarity", "Similarity not available", scoreId ]);
+        } catch (e) {}
+    }
+
 
     // if hash present, load appropriate score, else load the default.
 

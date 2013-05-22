@@ -126,12 +126,6 @@ text {
     text-indent: 5em;
 }
 
-#scoreLink{
-    color: grey;
-    font: 12px sans serif;
-    margin-left: 5px;
-}
-
 #svgWrapper {
     clear: left;
     padding-top: 1px;
@@ -148,13 +142,13 @@ svg#main{
     height: 61px;
     float: right;
     padding-top: 30px;
-    padding-right: 40px;
+    padding-right: 35px;
     font-family: 'Pontano Sans', sans-serif;
     font-size: 16px;
     color: grey;
 }
 
-.progress {
+#progress {
     font-size: 20px;
     font-style: italic;
     font-weight: bold;
@@ -176,10 +170,6 @@ svg#main{
 .legende {
     font: 15px sans-serif;
     color: #888;
-}
-
-.explain{
-    font-size: 10px;
 }
 
 #sizeLegend {
@@ -298,7 +288,7 @@ svg#main{
 
         <div id="search">
             <input type="text" id="scoreId" style="width:300px;" spellcheck="false">
-            <div class="progress"></div>
+            <div id="progress"></div>
         </div>
 
         <div id="infoWrapper">
@@ -381,7 +371,7 @@ function Scroll(pos) {
 }
 
 $(document).ready(function() {
-
+	
 
     var developer = false;
     var clicked = false;
@@ -421,14 +411,18 @@ $(document).ready(function() {
             .attr("height", h)
             .attr("transform", "translate(" + (w - r) / 2 + "," + (h - r) / 2 + ")");
 
-    var circles = vis.append("g").attr("class", "circles");
-    var texte = vis.append("g").attr("class", "texte");
+    var circles = vis.append("g").attr("id", "circles");
+    var texte = vis.append("g").attr("id", "texte");
 
     var scoreTitle = "";
     var scoreAuthor;
 
     window.onhashchange = function() {
-        update(location.hash.replace('#',''));
+        if (!location.hash) {
+            update(DEFAULT_SCORE);
+        } else {
+            update(location.hash.replace('#',''));
+        }
     }
 
     var loadScore = function(scoreId) {
@@ -460,7 +454,7 @@ $(document).ready(function() {
             },
             minLength: 2,
             select: function( event, ui ) {
-                d3.select('div.progress').text("Getting Data...");
+                $('#progress').text("Getting Data...");
                 update(ui.item.scoreId);
             }
         });
@@ -474,6 +468,7 @@ $(document).ready(function() {
         if ($("#scoreId").val() != SEARCH_HINT) $("#scoreId").val("");
 
         if (data.relatedScores.length == 0) {
+			$('#progress').text('');
             alert("no similarity data available yet");
             return;
         }
@@ -491,13 +486,13 @@ $(document).ready(function() {
         });
 
         var scores = data.relatedScores;
-        var rootName=data.scoreId;
+        var rootName = data.scoreId;
 
         var len = scores.length;
 
-        var comps={};
-        var aComps=[];
-        var scoreValues=0;
+        var comps = {};
+        var aComps = [];
+        var scoreValues = 0;
 
 
         for (var i = 0; i < len; i++) {
@@ -550,43 +545,38 @@ $(document).ready(function() {
             });
         }
 
-        var dataset = {"root":rootName,"name":scoreTitle,"score":scoreValues,"children":aComps};
-        if (dataset.children.length == 0) {
-            dataset = {"root":rootName,"name":scoreTitle,"score":100,"children":aComps};
-            updateData(dataset, true);
-        }else{
-            updateData(dataset);
-        }
+        var dataset = {"root":rootName, "scoreId": data.scoreId, "name":scoreTitle, "score":scoreValues, "children":aComps};
+        updateData(dataset);
+        
     };
 
     var getSimilarityScore = function(data) {
-
 
         var scoreId = data.items[0].scoreId;
 
         scoreTitle = typeof data.items[0] !== 'undefined' ? data.items[0].title : scoreId;
         scoreAuthor = typeof data.items[0] !== 'undefined' ? data.items[0].authors : '';
 
-        var header = d3.select("#infoHead");
+        var header = d3.select('#infoHead');
+		
         header.selectAll("span.headline").remove();
         header.selectAll("span.headline").data(scoreAuthor)
-                .enter().append("span").attr("class","headline")
-                .text(function(d){return d});
+              .enter().append("span").attr("class","headline")
+              .text(function(d){return d});
 
         header.select("div.headline").remove();
         header.append("div").attr("class", "headline")
-                .text(function() {
+              .text(function() {
                     if (scoreTitle.length > 35) {
                         return scoreTitle.substring(0, 35) + "...";
                     } else {
                         return scoreTitle;
                     }
-                });
+              });
 
 
         var pureId = scoreId.substring(5);
 
-        console.log('got similarity for ' + pureId);
 
         $("#sourceLink").detach();
         $("<a>").attr("id", "sourceLink")
@@ -597,7 +587,7 @@ $(document).ready(function() {
     }
 
     var errorFunction = function(){
-        d3.select('.progress').text('Error. Please try again.');
+        $('#progress').text('Error. Please try again.');
     }
 
     var update = function(id) {
@@ -635,7 +625,7 @@ $(document).ready(function() {
         });
     }
 
-    function updateData(data, nosuccess){
+    function updateData(data){
         zoomed = false;
         zoomable = false;
 
@@ -645,7 +635,7 @@ $(document).ready(function() {
 
         var nodes = pack.nodes(root).filter(function(d) { return d.score; });
         var key = function(d) {
-            if (d.root) return "0";
+            if (d.root) return d.scoreId;
             else if (d.children) return d.name;
             else return d.scoreId;
         }
@@ -655,6 +645,7 @@ $(document).ready(function() {
         circle.attr("class", function(d) { if (d.root) { return "root"} else {return d.children ? "parent" : "child";} })
                 .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
                 .attr("name", function(d){return d.name;})
+				.attr("parent", function (d) {if(d.parent ) return d.parent.name;})
                 .attr("hover","false")
                 .append("title")
                 .text(function(d) {
@@ -679,47 +670,14 @@ $(document).ready(function() {
                 .attr("class", function(d) { if(d.root){ return "root"} else{ return d.children ? "parent" : "child";} })
                 .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
                 .attr("name", function(d){return d.name;})
+				.attr("parent", function (d) { if(d.parent )return d.parent.name})
                 .attr("hover","false")
                 .on("mouseover",function(d){
                     if(zoomedNode.depth<=d.depth){
                         showChildren(getParents(d),false);
                     }
                     if(checkInfoLength() && !d.root){
-                        $('#infos').scrollTop(0);
-                        var offset=$('#infos').offset();
-                        var position = $('div[name="'+ getName(d)+'"]').position();
-
-                        if (position.top > INFOWRAPPERHEIGHT || position.top < $('#infos').scrollTop()){
-                            if (d.depth != 1) {
-
-                                var posParent = $('div[name="'+ getName(d.parent)+'"]').position();
-                                var childrenLength=0;
-
-                                if (d.children) {
-                                    childrenLength= d.children.length*30;
-                                }
-                                if (position.top-posParent.top < INFO_HEIGHT - childrenLength){
-                                    if (d.parent.parent) {
-
-                                        var posParentParent = $('div[name="'+ d.parent.parent.name+'"]').position();
-                                        childrenLength = d.parent.parent.children.length*30 + d.parent.children.length*30;
-
-                                        if(position.top-posParentParent.top < INFO_HEIGHT - childrenLength){
-                                            Scroll(posParentParent.top-offset.top);
-                                        } else {
-                                            Scroll(posParent.top-offset.top);
-                                        }
-                                    }else{
-                                        Scroll(posParent.top-offset.top);
-                                    }
-                                }else{
-                                    Scroll(position.top-offset.top);
-                                }
-                            }else{
-                                Scroll(position.top-offset.top);
-                            }
-                        }
-
+						updateInfoScroll(d);
                     }
                     highlightDiv(d);
                 })
@@ -733,12 +691,11 @@ $(document).ready(function() {
                         zoom(node == d ? root : d);
                     } else if (d.depth == 3) {
                         if (!clicked) {
-                            d3.select('div.progress').text("Getting Data...");
+                            $('#progress').text("Getting Data...");
                             d3.select('circle[name="'+d.name+'"]').style("fill", "#288425");
                             clicked=true;
                             zoomable=false;
                             loadScore(d.scoreId);
-                            //update(d.scoreId);
                         }
                     }
                 })
@@ -760,14 +717,30 @@ $(document).ready(function() {
                     }
                     else{
                         return (d.children ? "" : (d.composer==='undefined' ? '' : d.composer+"\n")+(d.composition==='undefined' ? '' : d.composition+"\n"))+d.name.split('id:')[0]+"\nSimilarities: "+ format(d.score) ;} });
-
+		
+		var rootCircle = $('.root');
+		var target = $('#circles circle').get(0);
+		rootCircle.insertBefore(target);
+		
+		var oldRoot = d3.select('#circles circle:nth-child(2)');
+		var oldRootObject = $($('#circles circle').get(1));
+		var target = $('circle[name="'+oldRoot.attr('parent')+'"]');
+		oldRootObject.insertAfter(target);
+		
+		
         circle.transition().duration(TRANSITION_DURATION)
+				.style("fill", function(d){
+					if( d.root) { return "grey";}
+					else if (!d.children) { return "#15c136";}
+					else { return "#33648e";}
+				
+				})
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", function(d) { return d.r; })
                 .each("start", function(d){
                     zoomable=false;
-                    d3.select('.progress').text('');
+                    $('#progress').text('');
                 })
                 .each("end", function(d){
                     zoomable=true;
@@ -803,12 +776,11 @@ $(document).ready(function() {
                 })
                 .on("click", function(d){
                     if (!clicked) {
-                        d3.select('div.progress').text("Getting Data...");
+                        $('#progress').text("Getting Data...");
                         d3.select('circle[name="' + d.name + '"]').style("fill", "#288425");
                         clicked = true;
                         zoomable = false;
                         loadScore(d.scoreId);
-                        //update(d.scoreId);
                     }
                 });
 
@@ -832,10 +804,10 @@ $(document).ready(function() {
                 .style("font-size", function(d) { return d.r > 25 ? 10 : 2; });
 
         text.exit().remove();
-        initDiv(data,nosuccess);
+        initDiv(data);
 
-
-        function zoom(d, click) {
+    }
+	function zoom(d, click) {
             zoomedNode = d;
 
             if (d == root) {
@@ -847,12 +819,9 @@ $(document).ready(function() {
                 }
             }
             if(zoomable){
-                /*var k = r / d.r/ 4 ;
-                 var f = d.r*2;
-                 if(k <= 1) {*/
                 k = r/d.r/2;
                 f = d.r;
-                //}
+                
                 x.domain([d.x - f, d.x + f]);
                 y.domain([d.y - f, d.y + f]);
 
@@ -891,19 +860,11 @@ $(document).ready(function() {
         }
 
 
-        function initDiv(d, nosuccess) {
+        function initDiv(d) {
 
             var infos = d3.select("div#infos");
             infos.selectAll("div").remove();
-            if(nosuccess){
-                infos.append("div")
-                        .style("font-size", "16px")
-                        .style("cursor", "default")
-                        .text("No similiar works");
-
-            }
-            else if (d.children) {
-                //infos.selectAll("div").remove();
+            if (d.children) {
 
                 d.children.sort(function(a, b) {return b.score - a.score});
 
@@ -922,7 +883,6 @@ $(document).ready(function() {
                         })
 
                         .text(function(d, i) {
-                            //var title = (i + 1) + ". " + d.name.split('id:')[0];
                             var title = d.name.split('id:')[0];
                             return shorten(title);
                         })
@@ -952,8 +912,7 @@ $(document).ready(function() {
                         .style("margin-left","2px")
                         .style("float","left")
                         .style("margin-right","5px")
-                        .style("padding-top","5px")
-                ;
+                        .style("padding-top","5px");
 
 
             }
@@ -964,7 +923,7 @@ $(document).ready(function() {
             var datum=d;
             var parents=[];
             parents.push(d);
-            while(datum.parent){
+            while (datum.parent) {
                 datum= datum.parent;
                 parents.push(datum);
             }
@@ -973,9 +932,9 @@ $(document).ready(function() {
 
         function showChildren(d,click){
 
-            var node= d3.select('div[name="'+d[0].name+'"]');
+            var node = d3.select('div[name="'+d[0].name+'"]');
 
-            if(click && $('div[name="'+d[0].name+'"] div[child="true"]').length>0){
+            if (click && $('div[name="'+d[0].name+'"] div[child="true"]').length>0) {
                 node.selectAll('div[child="true"]').remove();
                 node.select("img").attr("src", "data:image/png;base64," + downImageBase64)
                         .attr("title","Click to show children");
@@ -984,6 +943,11 @@ $(document).ready(function() {
                 if(!click){
                     d3.selectAll("#infoWrapper img").attr("src", "data:image/png;base64," + downImageBase64)
                             .attr("title","Click to show children");
+
+
+
+
+
                     d3.selectAll('div[child="true"]').remove();
                     var depthNode=d[0].depth-1;
                     if(depthNode!=-1){
@@ -1031,19 +995,18 @@ $(document).ready(function() {
                                     return shorten(title);
                                 })
                                 .on("click", function(d){
-                                    if(!d.children){
-                                        if(!clicked){
+                                    if (!d.children) {
+                                        if (!clicked) {
                                             d3.select('circle[name="' + d.name + '"]').style("fill", "#288425");
                                             clicked = true;
                                             zoomable = false;
-                                            d3.select('.progress').text('Getting Data...');
+                                            $('#progress').text('Getting Data...');
                                             loadScore(d.scoreId);
-                                            //update(d.scoreId);
                                         }
                                     }
-                                    if(!showChildren([d],true)){
+                                    if (!showChildren([d],true)) {
                                         zoom(d.parent);
-                                    }else{
+                                    } else {
                                         zoom(node == d ? root : d ,true);
                                     }
                                 })
@@ -1051,13 +1014,12 @@ $(document).ready(function() {
                                     highlightDiv(d,true);
 
                                     var toSelectCircle = 'circle[name="'+d.name+'"]';
-                                    var circle= d3.select(toSelectCircle)
-                                            .attr("hover", "child");
+                                    var circle = d3.select(toSelectCircle).attr("hover", "child");
 
                                 })
                                 .on("mouseout", function(d){
                                     d3.select('circle[hover="child"]').attr("hover","false");
-                                    if(!zoomed || d.depth==3){
+                                    if (!zoomed || d.depth==3) {
                                         notHighlightDiv(d,true);
                                     }
                                 });
@@ -1071,7 +1033,7 @@ $(document).ready(function() {
         }
 
         function checkInfoLength(){
-            if($("#infos div").length > MAX_LIST_LENGTH_NO_SCROLL) {
+            if ($("#infos div").length > MAX_LIST_LENGTH_NO_SCROLL) {
                 d3.selectAll('#infos').style("overflow-y","scroll");
                 return true;
             } else {
@@ -1082,25 +1044,25 @@ $(document).ready(function() {
 
         function highlightDiv(d,click){
             d3.selectAll('div[depth="' + d.depth + '"]')
-                    .attr("hover", "false")
-                    .style("font-weight", "normal");
+              .attr("hover", "false")
+              .style("font-weight", "normal");
             var name;
             if(click){
-                name= d.name;
+                name = d.name;
             }else{
-                name= getName(d);
+                name = getName(d);
             }
             d3.select('div[name="' + name + '"]')
-                    .attr("hover", "true")
-                    .style("font-weight", "bold");
+              .attr("hover", "true")
+              .style("font-weight", "bold");
         }
 
         function notHighlightDiv(d,click){
             var name;
             if (click) {
-                name= d.name;
+                name = d.name;
             } else{
-                name= getName(d);
+                name = getName(d);
             }
             d3.select('div[name="' + name + '"]')
                     .attr("hover", "false")
@@ -1127,16 +1089,43 @@ $(document).ready(function() {
                 return string;
             }
         }
-    }
+		
+		function updateInfoScroll(d){
+			$('#infos').scrollTop(0);
+            var offset=$('#infos').offset();
+            var position = $('div[name="'+ getName(d)+'"]').position();
+			var scrollTo = position.top - offset.top;
+			
+            if (position.top > INFOWRAPPERHEIGHT || position.top < $('#infos').scrollTop()) {
+                if (d.depth != 1) {
+
+					var posParent = $('div[name="'+ getName(d.parent)+'"]').position();
+                    var childrenLength = 0;
+
+                    if (d.children) {
+                        childrenLength = d.children.length*30;
+                    }
+                    if (position.top-posParent.top < INFO_HEIGHT - childrenLength){
+                        scrollTo = posParent.top - offset.top;
+						if (d.parent.parent) {
+
+                            var posParentParent = $('div[name="'+ getName(d.parent.parent)+'"]').position();
+                            childrenLength = d.parent.parent.children.length*30 + d.parent.children.length*30;
+
+                            if (position.top-posParentParent.top < INFO_HEIGHT - childrenLength){
+                                scrollTo = posParentParent.top - offset.top;
+                            }
+                        }
+                    }
+                }
+                Scroll(scrollTo);
+                
+            }
+		}
 
     // if hash present, load appropriate score, else load the default.
 
-    if (!location.hash) {
-        update(DEFAULT_SCORE);
-    } else {
-        update(location.hash.replace('#',''));
-    }
-
+    window.onhashchange();
 
 });
 </script>

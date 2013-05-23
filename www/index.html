@@ -272,6 +272,17 @@ svg#main{
     padding-bottom: 10px;
 }
 
+#commentsSection {
+    margin: 0px auto;
+    width: 600px;
+    text-align: center;
+    padding-top: 30px;
+}
+
+#disqus_thread {
+    margin-top: 30px;
+}
+
 </style>
 </head>
 <body>
@@ -349,7 +360,7 @@ svg#main{
                 <span class="legende">Score</span>
             </div>
 
-            <a href="http://www.peachnote.com">
+            <a href="http://www.peachnote.com" target="_blank">
                 <img src="http://www.peachnote.com/img/powered-by-peachnote-transparent-small.png" style="height:40px; margin-top:30px; margin-left: 400px; position: absolute;">
             </a>
 
@@ -401,7 +412,9 @@ svg#main{
 
             <p>
 
-                <!--We find it surprising that-->
+                We find it surprising that this simple definition of similarity seems to capture musical semantics so well.
+                Not only does this similarity capture the specificity of a particular piece;
+                scores by the same composer, of the same genre or the same time are rated more similar to each other too.
 
             <p>
 
@@ -441,6 +454,7 @@ svg#main{
                 <p>
                     Mai Bui
                 <p>
+                Bachelor in Computer Science at the LMU Munich
 
             </div>
 
@@ -450,9 +464,40 @@ svg#main{
                 <p>
                     Vladimir Viro
                 <p>
+                PhD in Computer Science at the LMU Munich
+                <p>
+                Founder of Peachnote
+
             </div>
 
             <div style="clear:both"></div>
+
+        </div>
+
+        <div id="commentsSection">
+
+            <h2>Feedback</h2>
+
+            We'd love to hear from you!
+
+            <p>
+
+            Found something interesting? Have a suggestion? a critique? Tell us about it!
+
+            <p>
+
+            <div id="disqus_thread"></div>
+            <script type="text/javascript">
+                var disqus_shortname = 'scoresy';
+                var disqus_url = 'http://www.peachnote.com/similarity';
+                (function() {
+                    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                })();
+            </script>
+            <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+            <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
         </div>
 
@@ -476,7 +521,7 @@ $(document).ready(function() {
     var MAX_LIST_LENGTH_NO_SCROLL = 19;
     var TRANSITION_DURATION = 2000;
     var SEARCH_HINT = 'Explore scores...';
-    var PLAIN_TEXT_URL = 'http://www.peachnote.com/similarity.html';
+    var PLAIN_TEXT_URL = 'http://www.peachnote.com/similarity-text.html';
     var INFO_HEIGHT = 470;
     var INFOWRAPPERHEIGHT = 550;
 

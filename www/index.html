@@ -543,7 +543,7 @@ $(document).ready(function() {
 
     var pack = d3.layout.pack()
             .size([r, r])
-            .value(function(d) { return Math.pow(Math.log(d.score),3); })
+            .value(function(d) { return Math.pow(Math.log(d.score), 3); })
 
 
     var vis = d3.select("#svgWrapper").append("svg")
@@ -566,9 +566,9 @@ $(document).ready(function() {
         }
     }
 
-    var loadScore = function(scoreId) {
-        location.hash = "#" + scoreId;
-        trackLoadScoreClick(scoreId);
+    var loadScore = function(newScoreId, currentScoreId) {
+        location.hash = "#" + newScoreId;
+        trackLoadScoreClick(newScoreId, currentScoreId);
     }
 
     //Autocomplete Search
@@ -689,7 +689,7 @@ $(document).ready(function() {
         }
 
         var dataset = {"root":rootName, "scoreId": data.scoreId, "name":scoreTitle, "score":scoreValues, "children":aComps};
-        updateData(dataset);
+        updateData(dataset, data.scoreId);
 
     };
 
@@ -770,7 +770,8 @@ $(document).ready(function() {
         });
     }
 
-    function updateData(data){
+    function updateData(data, currentScoreId){
+
         zoomed = false;
         zoomable = false;
 
@@ -811,6 +812,22 @@ $(document).ready(function() {
                                 + "\nSimilarities: "+ format(d.score);}
                 });
 
+        var getOnClick = function(currentScoreId) {
+            return function(d) {
+                if (d.children) {
+                    zoom(node == d ? root : d);
+                } else if (d.depth == 3) {
+                    if (!clicked) {
+                        $('#progress').text("Getting Data...");
+                        d3.select('circle[name="'+d.name+'"]').style("fill", "#288425");
+                        clicked=true;
+                        zoomable=false;
+                        loadScore(d.scoreId, currentScoreId);
+                    }
+                }
+            }
+        }
+
         circle.enter().append("svg:circle")
                 .attr("class", function(d) { if(d.root){ return "root"} else{ return d.children ? "parent" : "child";} })
                 .attr("scoreId", function(d){ return d.scoreId ? d.scoreId : " ";})
@@ -831,19 +848,7 @@ $(document).ready(function() {
                         notHighlightDiv(d);
                     }
                 })
-                .on("click", function(d) {
-                    if (d.children) {
-                        zoom(node == d ? root : d);
-                    } else if (d.depth == 3) {
-                        if (!clicked) {
-                            $('#progress').text("Getting Data...");
-                            d3.select('circle[name="'+d.name+'"]').style("fill", "#288425");
-                            clicked=true;
-                            zoomable=false;
-                            loadScore(d.scoreId);
-                        }
-                    }
-                })
+                .on("click", getOnClick(currentScoreId))
                 .attr("cx", function(d) { return w/2; })
                 .attr("cy", function(d) { return h/2; })
                 .attr("r", function(d) { return 0; })
@@ -1267,9 +1272,9 @@ $(document).ready(function() {
         }
     }
 
-    function trackLoadScoreClick (scoreId) {
+    function trackLoadScoreClick (newScoreId, currentScoreId) {
         try {
-            window._gaq.push([ '_trackEvent', "Similarity", "Load on click", scoreId ]);
+            window._gaq.push([ '_trackEvent', "Similarity", "Load on click", currentScoreId  + " - " + newScoreId ]);
         } catch (e) {}
     }
 

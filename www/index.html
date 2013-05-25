@@ -581,7 +581,7 @@ $(document).ready(function() {
                     dataType: "jsonp",
                     data: {
                         limit:10,
-                        q: '(title:"'+request.term+'"~0) (composer:'+request.term+')^2'
+                        q: '((title:"'+request.term+'"~0) (composer:'+request.term+')^2) AND (hasSimilars:1)'
                     },
                     success: function(data) {
                         response( $.map( data.items, function( item ) {

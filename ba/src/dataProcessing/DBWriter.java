@@ -18,57 +18,60 @@ public class DBWriter {
 	//Define URL of database server for
 	// database named similarity on the localhost
 	// with the default port number 3306.
-	private static final String URL = "jdbc:mysql://localhost:3306/similarity";
-	private static final String PATH = "D:/Bachelorarbeit/Similarity/DBInput/";
+	private static String URL;
+	private static String PATH;
 	private	Statement stmt; 
 	private Connection con;
+	private boolean leitmotive;
 	
-//	private String composerName;
-//	private List<Result<Long>> list;
-//	private List<Result<LongContainer>> list2;
-//
-//	private ArrayList<String> compositions;
-	
-//	public DBWriter(List<Result<Long>> list, String composer, ArrayList<String> compositions) {
-//		composerName = composer;
-//		this.list = list;
-//		this.compositions = compositions;
-//
-//	}
-	
-//	public DBWriter(List<Result<LongContainer>> list2, String currentComposer, 	ArrayList<String> compositions) {
-//		composerName = currentComposer;
-//		this.list2 = list2;
-//		this.compositions = compositions;
-//
-//	}
-	
+	public DBWriter(boolean leitmotive) {
+		this.leitmotive = leitmotive;
+		if (leitmotive) {
+			URL = "jdbc:mysql://localhost:3306/leitmotive";
+			PATH = "D:/Bachelorarbeit/Similarity/DBInput/Leitmotive/";
+		} else {
+			URL = "jdbc:mysql://localhost:3306/similarity";
+			PATH = "D:/Bachelorarbeit/Similarity/DBInput/Comp/";
+		}
+	}
 
 	
 	public void loadData() {
 		connectToDB();
 		try {
-			
-			stmt.executeUpdate(
-				"LOAD DATA INFILE '" + PATH + "ngrams.csv' REPLACE INTO TABLE ngrams" + 
-				" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
-			
-			stmt.executeUpdate(
-					"LOAD DATA INFILE '" + PATH + "composer.csv' INTO TABLE composers" + 
+			if (leitmotive) {
+				stmt.executeUpdate(
+					"LOAD DATA INFILE '" + PATH + "ngrams.csv' REPLACE INTO TABLE ngrams" + 
 					" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
-			
-			stmt.executeUpdate(
-					"LOAD DATA INFILE '" + PATH + "compositions.csv' INTO TABLE compositions" + 
+				
+				stmt.executeUpdate(
+						"LOAD DATA INFILE '" + PATH + "composers.csv' INTO TABLE composers" + 
+						" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
+				
+				stmt.executeUpdate(
+						"LOAD DATA INFILE '" + PATH + "compositions.csv' INTO TABLE compositions" + 
+						" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
+				
+				stmt.executeUpdate(
+						"LOAD DATA INFILE '" + PATH + "compcomp.csv' INTO TABLE compcomp" + 
+						" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
+				
+				stmt.executeUpdate(
+						"LOAD DATA INFILE '" + PATH + "results.csv' INTO TABLE results" + 
+						" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
+			} else {
+				stmt.executeUpdate(
+					"LOAD DATA INFILE '" + PATH + "ngrams.csv' REPLACE INTO TABLE ngrams" + 
 					" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
-			
-			stmt.executeUpdate(
-					"LOAD DATA INFILE '" + PATH + "compcomp.csv' INTO TABLE compcomp" + 
+					
+				stmt.executeUpdate(
+					"LOAD DATA INFILE '" + PATH + "composers.csv' INTO TABLE composers" + 
 					" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
-			
-			stmt.executeUpdate(
+					
+				stmt.executeUpdate(
 					"LOAD DATA INFILE '" + PATH + "results.csv' INTO TABLE results" + 
 					" FIELDS TERMINATED BY ',' LINES TERMINATED BY '\r\n'");
-
+			}
 			
 		} catch (SQLException e) {
 			e.printStackTrace();

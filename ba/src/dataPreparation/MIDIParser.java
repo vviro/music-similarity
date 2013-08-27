@@ -2,6 +2,7 @@ package dataPreparation;
 
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TObjectIntHashMap;
 
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
@@ -10,11 +11,16 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -29,27 +35,33 @@ import com.google.common.collect.TreeMultimap;
 import com.google.common.io.Files;
 
 import dataProcessing.InfoGetterForMelody;
-import dataProcessing.InfoGetterForChords;
+import dataProcessing.InfoGetterForLeimotifs;
+import dataProcessing.LongContainer;
+import dataProcessing.NgramCoder;
 
 public class MIDIParser 
 {
 	private static final int NOTE_ON = 0x90;
 	private static final int NOTE_OFF = 0x80;
+	
 	public static String[] DIRECTORY;
 
 	public static String currentComposer;
-	private static InfoGetterForMelody in;
-	private static InfoGetterForChords inChords;
+//	private static InfoGetterForChords inChords;
 	private static final int NGRAM_LENGTH = 10;
+	private static final int SUPPORT_TRESHOLD = 2;
+
+    private static TObjectIntHashMap<LongContainer> countMap  = new TObjectIntHashMap<LongContainer>();
+
 //	private static final int LOWER_BOUND = 8;
-	static boolean chords = true;
+	static boolean leitmotive = true;
 
 
 	public static void main(String[] args) {
 		File f = new File("data");
 		File[] files = f.listFiles();
 //		DIRECTORY = new String[files.length];
-		DIRECTORY = new String[]{"test"};
+		DIRECTORY = new String[]{"verdi"};
 
 //		for (int i = 0; i < files.length; i++) {
 //			DIRECTORY[i] = files[i].getName();
@@ -60,12 +72,12 @@ public class MIDIParser
 		for (String s: DIRECTORY) {
 			currentComposer = s;
 			System.out.println(s);
-			if (!chords){
-				in = new InfoGetterForMelody(NGRAM_LENGTH, 0, 0, 0);
+			if (!leitmotive){
+				countMap  = new TObjectIntHashMap<LongContainer>();
 				MIDIParser.convertFiles(readFilesinDirectory("data/"+currentComposer));
 				System.out.println("Done converting");
 			} else {
-				inChords = new InfoGetterForChords(NGRAM_LENGTH, 0, 0, 0);
+//				inChords = new InfoGetterForChords(NGRAM_LENGTH, 0, 0, 0);
 				MIDIParser.convertFiles(readFilesinDirectory("data/"+currentComposer));
 				System.out.println("Done converting");
 			}
@@ -84,13 +96,13 @@ public class MIDIParser
 			try {
 				String fileName = files[i].getName();
 				byte[] byteArray = Files.toByteArray(files[i]);
-				if (!chords) {
-					TIntList out = parseTimewise(byteArray,i);
-					in.getFrequencies(out, fileName);
+				if (!leitmotive) {
+					ArrayList<String> out2 = parseChords(byteArray, i);
+					getFrequencies(out2, fileName);
 
 				} else {
 					ArrayList<String> out2 = parseChords(byteArray, i);
-					inChords.getFrequencies(out2, fileName);
+					writeNgramsToFile("CSV/leitmotive/" + MIDIParser.currentComposer + ".csv", getFrequencies(out2, fileName));
 
 				}
 				
@@ -99,7 +111,38 @@ public class MIDIParser
 				System.out.println("Cannot read File: " + files[i]);
 			}
 		}
+		if (!leitmotive) {
+			writeNgramsToFile("CSV/chordsComp/" + MIDIParser.currentComposer + ".csv", countMap);
+
+		}
 	}
+	
+	public static void writeNgramsToFile(String filename, TObjectIntHashMap<LongContainer> countMap) {
+		//write how often a key appears in song 
+		try {		
+			File output = new File(filename);
+		    FileWriter fw = new FileWriter(output);
+				
+		    BufferedWriter writer = new BufferedWriter(fw);
+		        
+			Collection<LongContainer> entrys = countMap.keySet();
+			Iterator<LongContainer> iterator = entrys.iterator();
+			while (iterator.hasNext()) {
+				LongContainer next = iterator.next();
+				if (countMap.get(next) > SUPPORT_TRESHOLD) {
+					for (long l: next.getLongArray()) {
+						writer.write(l + ",");
+					}
+					writer.write(countMap.get(next) + "\r\n");
+				}
+			}
+			writer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public static ArrayList<String> parseChords(byte[] rawmidi, int fileNumber) throws Exception {
 		ArrayList<String> list = new ArrayList<String>();
 		InputStream is = new ByteArrayInputStream(rawmidi);
@@ -151,24 +194,28 @@ public class MIDIParser
 				thisChord = Sets.union(restNotes, Sets.newHashSet(onEvents.get(tick))).immutableCopy();
 				chords.putAll(tick, thisChord);
 			}
-			Integer[] a = new Integer[thisChord.size()];
-			thisChord.toArray(a);
-			Arrays.sort(a); 
-
-			String chord = "";
-			for (int i = 0; i < a.length; i++) {
-				if (i == a.length -1) {
-					chord += a[i];
-				} else {
-					chord += a[i] + "_";
+			
+			if (offEvents.containsKey(tick)) {
+				Integer[] a = new Integer[thisChord.size()];
+				thisChord.toArray(a);
+				Arrays.sort(a); 
+	
+				String chord = "";
+				for (int i = 0; i < a.length; i++) {
+					if (i == a.length -1) {
+						chord += a[i];
+					} else {
+						chord += a[i] + "_";
+					}
 				}
-			}
-			if (chord != "") {
-				list.add(chord);
+				if (!chord.equals("")) {
+					list.add(chord);
+//					System.out.println(tick +" "+chord);
+				}
 			}
 			prevTick = tick;
 		}
-		
+//		System.out.println(chords.entries());
 		return list;
 	}    
 	
@@ -222,6 +269,47 @@ public class MIDIParser
 //		}
 		is.close();
 		return list;
+	}
+	
+	
+	public static TObjectIntHashMap<LongContainer> getFrequencies(ArrayList<String> out, String fileName) throws IOException {
+
+
+		String[] array = new String[out.size()];
+		out.toArray(array);
+
+	    
+		//create multimap with (key,count(key))
+	    TObjectIntHashMap<LongContainer> countMap  = new TObjectIntHashMap<LongContainer>();
+		for (int i = 0; i <= array.length; i++) {
+			String keys ="";
+			ArrayList<LongContainer> all = new ArrayList<LongContainer>();
+			for (int len = 0; len < (array.length-i < NGRAM_LENGTH ? array.length-i: NGRAM_LENGTH); len++) {
+				keys = array[i + len];
+			    long[] longKeys = NgramCoder.pack(keys);
+			    all.add(new LongContainer(longKeys));
+			    
+			    long[] ngrams = new long[0];
+			    for (LongContainer longNgram: all) {
+			    	long[] l = longNgram.getLongArray();
+			    	long[] old = ngrams;
+			    	ngrams = new long[old.length + l.length];
+			    	System.arraycopy(old, 0, ngrams, 0, old.length);
+					System.arraycopy(l, 0, ngrams, old.length, l.length);
+			    }
+				
+				if (!countMap.contains(new LongContainer(ngrams))) {
+					countMap.put(new LongContainer(ngrams), 1);
+				} else {
+					int count = countMap.get(new LongContainer(ngrams)) + 1;
+					countMap.put(new LongContainer(ngrams), count);
+				}
+
+			}
+		}
+	    
+		
+		return countMap;
 	}
 	
 //	public static ImmutableMultimap<Long, Integer> parseTrackwise(byte[] rawmidi, int fileNumber) throws Exception {

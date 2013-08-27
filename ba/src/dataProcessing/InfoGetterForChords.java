@@ -50,59 +50,59 @@ public class InfoGetterForChords {
 		return compositions;
 	}
 
-	public TObjectIntHashMap<LongContainer> getFrequencies(ArrayList<String> out, String fileName) throws IOException {
-
-
-		String[] array = new String[out.size()];
-		out.toArray(array);
-
-	    
-		//create multimap with (key,count(key))
-	    TObjectIntHashMap<LongContainer> countMap  = new TObjectIntHashMap<LongContainer>();
-		for (int i = 0; i <= array.length; i++) {
-			String keys ="";
-			ArrayList<LongContainer> all = new ArrayList<LongContainer>();
-			for (int len = 0; len < (array.length-i < NGRAM_LENGTH ? array.length-i: NGRAM_LENGTH); len++) {
-				keys = array[i + len];
-			    long[] longKeys = NgramCoder.pack(keys);
-			    all.add(new LongContainer(longKeys));
-			    
-			    long[] ngrams = new long[0];
-			    for (LongContainer longNgram: all) {
-			    	long[] l = longNgram.getLongArray();
-			    	long[] old = ngrams;
-			    	ngrams = new long[old.length + l.length];
-			    	System.arraycopy(old, 0, ngrams, 0, old.length);
-					System.arraycopy(l, 0, ngrams, old.length, l.length);
-			    }
-				
-				if (!countMap.contains(new LongContainer(ngrams))) {
-					countMap.put(new LongContainer(ngrams), 1);
-				} else {
-					int count = countMap.get(new LongContainer(ngrams)) + 1;
-					countMap.put(new LongContainer(ngrams), count);
-				}
-
-			}
-		}
-	    
-		//write how often a key appears in song 
-		File output = new File("CSV/chords/"+MIDIParser.currentComposer+"/" + fileName + ".csv");
-        FileWriter fw = new FileWriter(output);
-        BufferedWriter writer = new BufferedWriter(fw);
-        
-		Collection<LongContainer> entrys = countMap.keySet();
-		Iterator<LongContainer> iterator = entrys.iterator();
-		while (iterator.hasNext()) {
-			LongContainer next = iterator.next();
-			for (long l: next.getLongArray()) {
-				writer.write(l + ",");
-			}
-			writer.write(countMap.get(next) + "\r\n");
-		}
-		writer.close();
-		return countMap;
-	}
+//	public TObjectIntHashMap<LongContainer> getFrequencies(ArrayList<String> out, String fileName) throws IOException {
+//
+//
+//		String[] array = new String[out.size()];
+//		out.toArray(array);
+//
+//	    
+//		//create multimap with (key,count(key))
+//	    TObjectIntHashMap<LongContainer> countMap  = new TObjectIntHashMap<LongContainer>();
+//		for (int i = 0; i <= array.length; i++) {
+//			String keys ="";
+//			ArrayList<LongContainer> all = new ArrayList<LongContainer>();
+//			for (int len = 0; len < (array.length-i < NGRAM_LENGTH ? array.length-i: NGRAM_LENGTH); len++) {
+//				keys = array[i + len];
+//			    long[] longKeys = NgramCoder.pack(keys);
+//			    all.add(new LongContainer(longKeys));
+//			    
+//			    long[] ngrams = new long[0];
+//			    for (LongContainer longNgram: all) {
+//			    	long[] l = longNgram.getLongArray();
+//			    	long[] old = ngrams;
+//			    	ngrams = new long[old.length + l.length];
+//			    	System.arraycopy(old, 0, ngrams, 0, old.length);
+//					System.arraycopy(l, 0, ngrams, old.length, l.length);
+//			    }
+//				
+//				if (!countMap.contains(new LongContainer(ngrams))) {
+//					countMap.put(new LongContainer(ngrams), 1);
+//				} else {
+//					int count = countMap.get(new LongContainer(ngrams)) + 1;
+//					countMap.put(new LongContainer(ngrams), count);
+//				}
+//
+//			}
+//		}
+//	    
+//		//write how often a key appears in song 
+//		File output = new File("CSV/chords/"+MIDIParser.currentComposer+"/" + fileName + ".csv");
+//        FileWriter fw = new FileWriter(output);
+//        BufferedWriter writer = new BufferedWriter(fw);
+//        
+//		Collection<LongContainer> entrys = countMap.keySet();
+//		Iterator<LongContainer> iterator = entrys.iterator();
+//		while (iterator.hasNext()) {
+//			LongContainer next = iterator.next();
+//			for (long l: next.getLongArray()) {
+//				writer.write(l + ",");
+//			}
+//			writer.write(countMap.get(next) + "\r\n");
+//		}
+//		writer.close();
+//		return countMap;
+//	}
 	
 	public HashMap<LongContainer, Double[]> computeAssociationRules(TObjectIntHashMap<LongContainer> map, String fileName) {
 		Collection<LongContainer> entries = map.keySet();
@@ -207,6 +207,15 @@ public class InfoGetterForChords {
 
 	}
 	
+	private boolean isSubstring(String ngram, String subngram) {
+		boolean isSubstring = false;
+		if (subngram.split(" ").length > 2) {
+			isSubstring = ngram.contains(subngram.substring(0, subngram.lastIndexOf(' ') - 1))
+			|| ngram.contains(subngram.substring(subngram.indexOf(' ') + 1));
+		}
+		return ngram.contains(subngram) || subngram.contains(ngram) || isSubstring;
+	}
+	
 	private List<Result<LongContainer>> cutResults(List<List<Result<LongContainer>>> results, TDoubleArrayList maxWeights, int composerIndex) {
 		
 		List<Result<LongContainer>> phrases = new ArrayList<Result<LongContainer>>();
@@ -219,18 +228,22 @@ public class InfoGetterForChords {
 				if (phrasesList.size() >= MAX_PHRASE_COUNT) {
 					break;
 				}
+				
 				boolean isSubstring = false;
 				for (Result<LongContainer> r: phrasesList){
-					if (NgramCoder.unpackS(r.getNgram().getLongArray()).contains(NgramCoder.unpackS(result.getNgram().getLongArray()))) {
-						isSubstring = true;
+					isSubstring = isSubstring(NgramCoder.unpackS(r.getNgram().getLongArray()), NgramCoder.unpackS(result.getNgram().getLongArray()));
+					if (isSubstring) {
+						break;
 					}
-					
 				}
+				
 				if (!isSubstring && result.getWeight()> WEIGHT_TRESHOLD * maxWeights.get(result.getCompositionId())) {
 					phrasesList.add(result);
+					
 					System.out.println("Composition: "+ compositions.get(result.getCompositionId())+
 							", Ngram: " + NgramCoder.unpackS(result.getNgram().getLongArray()) +
 							", Weight: " + result.getWeight());
+					
 					String compString = compositions.get(result.getCompositionId());
 					if (!compositionList.contains(compString)) {
 						compositionList.add(compString);
